@@ -44,14 +44,11 @@ class Smarty:
     def __init__(self, iface):
         # import pip
         # pip._internal.main(['install', 'smartystreets_python_sdk'])
+        # import subprocess
+        # import sys
+        # #subprocess.check_call([sys.executable, "-m", "pip", "install", "smartystreets_python_sdk"])
+        # subprocess.call(['pip', 'install', 'smartystreets_python_sdk'])
 
-
-        import subprocess
-        import sys
-
-        #subprocess.check_call([sys.executable, "-m", "pip", "install", "smartystreets_python_sdk"])
-        subprocess.call(['pip', 'install', 'smartystreets_python_sdk'])
-        
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -195,7 +192,7 @@ class Smarty:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def smarty():
+    def smarty(self):
     
         auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
         auth_token = "nD3IIoyZ3H4LSzNp6qpl"

@@ -32,6 +32,13 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
+
+    #import subprocess
+    #import sys
+    #import pip
+
+    #subprocess.check_call([sys.executable, "-m", "pip", "install", 'smartystreets_python_sdk'])
+    
     from .smarty import Smarty
 
     return Smarty(iface)
