@@ -199,44 +199,42 @@ class Smarty:
 
         credentials = StaticCredentials(auth_id, auth_token)
 
-        client = ClientBuilder(credentials).with_licenses(["us-standard-cloud"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
 
         lookup = StreetLookup()
-        lookup.input_id = "24601"  # Optional ID from your system
-        lookup.addressee = "John Doe"
-        lookup.street = "1600 Amphitheatre Pkwy"
-        lookup.street2 = "closet under the stairs"
-        lookup.secondary = "APT 2"
-        lookup.urbanization = ""  # Only applies to Puerto Rico addresses
-        lookup.city = "Mountain View"
-        lookup.state = "CA"
-        lookup.zipcode = "94043"
+        #lookup.input_id = "24601"  # Optional ID from your system ##################################
+        
+        lookup.addressee = self.dlg.addressee.text()  
+        lookup.street = self.dlg.street.text() 
+        lookup.street2 = self.dlg.street2.text()
+        lookup.secondary = self.dlg.secondary.text()
+        lookup.urbanization = self.dlg.urbanization.text() 
+        lookup.city = self.dlg.city.text() 
+        lookup.state = self.dlg.state.text() 
+        lookup.zipcode = self.dlg.zipcode.text()
+        #### lookup.candidates = self.dlg.candidates.text().toInt()   #### just took candidates off the form :]
         lookup.candidates = 3
-        lookup.match = "invalid" 
+        lookup.match = "invalid" ### just took match off the form :]
 
         try:
-            client.send_lookup(lookup) ###################### ERROR HERE
+            client.send_lookup(lookup)
         except exceptions.SmartyException as err:
-            #################### IM NOT SURE IF QGIS HAS ATTRIBUTE .CRITICAL
-            self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 216", level=Qgis.CRITICAL, duration=3)
-            ##################################
+            self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 216", level=Qgis.Critical, duration=3)
             return
 
         result = lookup.result
 
         if not result:
-            #################### IM NOT SURE IF QGIS HAS ATTRIBUTE .CRITICAL
-            self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 223", level=Qgis.CRITICAL, duration=3)
-            ##################################
+            self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 223", level=Qgis.Critical, duration=3)
             return
 
         first_candidate = result[0]
 
-        message = ("Address is valid. (There is at least one candidate)\n" + "ZIP Code: " + first_candidate.components.zipcode + 
+        message = ("Address is valid. (There is at least one candidate)" + "\nZIP Code: " + first_candidate.components.zipcode + 
             "\nCounty: " + first_candidate.metadata.county_name + "\nLatitude: {}".format(first_candidate.metadata.latitude) + 
             "\nLongitude: {}".format(first_candidate.metadata.longitude))
 
-        self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=3)
+        self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Critical, duration=3)
 
     def run(self):
         """Run method that performs all the real work"""
