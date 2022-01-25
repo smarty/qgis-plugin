@@ -21,10 +21,21 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, Qgis
+# from qgis.PyQt.QtNetwork import QtNetworkRequest
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
+# from qgis.core import QgsProject, Qgis
+from qgis.core import (QgsCoordinateReferenceSystem,
+                       QgsCoordinateTransform,
+                       QgsProject,
+                       QgsRectangle,
+                       QgsPointXY,
+                       QgsGeometry,
+                       QgsVectorLayer,
+                       QgsFeature,
+                       QgsNetworkAccessManager,
+                       QgsNetworkReplyContent, QgsProject, Qgis)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
@@ -208,7 +219,7 @@ class Smarty:
         lookup.street = self.dlg.street.text() 
         lookup.street2 = self.dlg.street2.text()
         lookup.secondary = self.dlg.secondary.text()
-        lookup.urbanization = self.dlg.urbanization.text() 
+        #lookup.urbanization = self.dlg.urbanization.text() #### I took this off the form
         lookup.city = self.dlg.city.text() 
         lookup.state = self.dlg.state.text() 
         lookup.zipcode = self.dlg.zipcode.text()
@@ -219,13 +230,13 @@ class Smarty:
         try:
             client.send_lookup(lookup)
         except exceptions.SmartyException as err:
-            self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 216", level=Qgis.Critical, duration=3)
+            self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 222", level=Qgis.Critical, duration=6)
             return
 
         result = lookup.result
 
         if not result:
-            self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 223", level=Qgis.Critical, duration=3)
+            self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 228", level=Qgis.Critical, duration=6)
             return
 
         first_candidate = result[0]
@@ -234,7 +245,57 @@ class Smarty:
             "\nCounty: " + first_candidate.metadata.county_name + "\nLatitude: {}".format(first_candidate.metadata.latitude) + 
             "\nLongitude: {}".format(first_candidate.metadata.longitude))
 
-        self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Critical, duration=3)
+        ############################################################################################################################
+
+                                                            ######### PROCESS LAT AND LONG
+        # x = long and y = lat Im pretty sure...
+        #### *** Take the lat and long and send it to whatever will set the dot on the map *** ####
+        project = QgsProject.instance()
+
+        address = ("Address: ZIP Code: " + first_candidate.components.zipcode + 
+            "County: " + first_candidate.metadata.county_name + "Latitude: {}".format(first_candidate.metadata.latitude) + 
+            "Longitude: {}".format(first_candidate.metadata.longitude))
+
+        #### I Don't think 
+        myLicense = "Data \u00a9 OpenStreetMap contributors, ODbL 1.0. https://www.openstreetmap.org/copyright"
+
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
+                           "Nominatim Reverse Geocoding",
+                           "memory")
+
+        longitude = first_candidate.metadata.longitude
+        latitude = first_candidate.metadata.latitude
+
+        point_out = QgsPointXY(longitude, latitude)
+        feature = QgsFeature()
+        feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+
+        ## -- TODO: I still need to define address and license
+        feature.setAttributes([address, myLicense])
+
+        layer_out.dataProvider().addFeature(feature)
+        layer_out.updateExtents()
+        project.addMapLayer(layer_out)
+
+        ############################################################################################################################
+
+                                                            ######### ZOOM TO BOUNDING BOX 
+
+        #bbox = [float(coord) for coord in response_json['boundingbox']] # TODO: boudningbox is a return of Nominatim so need to think this through
+        min_y, max_y, min_x, max_x = ((latitude + 2), (latitude - 2), (longitude + 2), (longitude - 2))
+        bbox_geom = QgsGeometry.fromRect(QgsRectangle(min_x, min_y, max_x, max_y))
+
+        # Transform bbox if map canvas has a different CRS
+        if project.crs().authid() != 'EPSG:4326':
+            xform = QgsCoordinateTransform(crs_out,
+                                   project.crs(),
+                                   project)
+            bbox_geom.transform(xform)
+        self.iface.mapCanvas().zoomToFeatureExtent(QgsRectangle.fromWkt(bbox_geom.asWkt()))
+
+        ############################################################################################################################                                                    
+
+        self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -250,6 +311,7 @@ class Smarty:
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+        
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
