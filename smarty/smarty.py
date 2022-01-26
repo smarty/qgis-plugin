@@ -215,7 +215,7 @@ class Smarty:
         lookup = StreetLookup()
         #lookup.input_id = "24601"  # Optional ID from your system ##################################
         
-        lookup.addressee = self.dlg.addressee.text()  
+        #lookup.addressee = self.dlg.addressee.text()  #### I took this off the form
         lookup.street = self.dlg.street.text() 
         lookup.street2 = self.dlg.street2.text()
         lookup.secondary = self.dlg.secondary.text()
@@ -257,10 +257,10 @@ class Smarty:
             "Longitude: {}".format(first_candidate.metadata.longitude))
 
         #### I Don't think 
-        myLicense = "Data \u00a9 OpenStreetMap contributors, ODbL 1.0. https://www.openstreetmap.org/copyright"
+        myLicense = "smarty.com"
 
         layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
-                           "Nominatim Reverse Geocoding",
+                           "Smarty",
                            "memory")
 
         longitude = first_candidate.metadata.longitude
@@ -270,7 +270,6 @@ class Smarty:
         feature = QgsFeature()
         feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
-        ## -- TODO: I still need to define address and license
         feature.setAttributes([address, myLicense])
 
         layer_out.dataProvider().addFeature(feature)
@@ -280,18 +279,22 @@ class Smarty:
         ############################################################################################################################
 
                                                             ######### ZOOM TO BOUNDING BOX 
+        
+        #center_point_in = QgsPointXY(lon, lat)
+        
+        # convert coordinates
+        crsSrc = QgsCoordinateReferenceSystem(4326)  # WGS84
+        crsDest = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+        xform = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance())
+        # forward transformation: src -> dest
+        center_point = xform.transform(point_out)
+        self.iface.mapCanvas().setCenter(center_point)
 
-        #bbox = [float(coord) for coord in response_json['boundingbox']] # TODO: boudningbox is a return of Nominatim so need to think this through
-        min_y, max_y, min_x, max_x = ((latitude + 2), (latitude - 2), (longitude + 2), (longitude - 2))
-        bbox_geom = QgsGeometry.fromRect(QgsRectangle(min_x, min_y, max_x, max_y))
-
-        # Transform bbox if map canvas has a different CRS
-        if project.crs().authid() != 'EPSG:4326':
-            xform = QgsCoordinateTransform(crs_out,
-                                   project.crs(),
-                                   project)
-            bbox_geom.transform(xform)
-        self.iface.mapCanvas().zoomToFeatureExtent(QgsRectangle.fromWkt(bbox_geom.asWkt()))
+        ### zoom
+        zoom = 22
+        if zoom is not None:
+            # transform the zoom level to scale
+            scale_value = 591657550.5 / 2 ** (zoom - 1)
 
         ############################################################################################################################                                                    
 
