@@ -48,6 +48,7 @@ from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
 import os.path
+import pandas as pd
 
 
 class Smarty:
@@ -309,18 +310,64 @@ class Smarty:
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
 
-    def smarty2(self):
+    def smarty_batch(self):
 
         filePath = self.dlg.mQgsFileWidget.filePath()
-        uri = filePath % ("UTF-8",",", "longitude", "latitude","epsg:4326")
 
         self.iface.messageBar().pushMessage("Success: ", "Hello, world! LINE: 314 ........ File path: ", level=Qgis.Success, duration=6)
 
-        eq_layer = QgsVectorLayer(uri,"eq-data","delimitedtext")
+        df = pd.read_csv(filePath)
 
-        project = QgsProject.instance()
+        df.drop(['first_name', 'last_name', 'company_name', 'phone1', 'phone', 'email'], axis=1, inplace=True)
+        
+        for index, row in df.iterrows():
+            street = row['address']
+            city = row['city']
+            state = row['state']
+            zipcode = str(row['zip'])
 
-        project.addMapLayer(eq_layer)
+
+
+            auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
+            auth_token = "nD3IIoyZ3H4LSzNp6qpl"
+
+            credentials = StaticCredentials(auth_id, auth_token)
+
+            client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+
+            lookup = StreetLookup()
+            #lookup.input_id = "24601"  # Optional ID from your system ##################################
+            
+            #lookup.addressee = self.dlg.addressee.text()  #### I took this off the form
+            lookup.street = street
+            lookup.street2 = ""
+            lookup.secondary = ""
+            #lookup.urbanization = self.dlg.urbanization.text() #### I took this off the form
+            lookup.city = city
+            lookup.state = state
+            lookup.zipcode = zipcode
+            #### lookup.candidates = self.dlg.candidates.text().toInt()   #### just took candidates off the form :]
+            lookup.candidates = 3
+            lookup.match = "invalid" ### just took match off the form :]
+
+            try:
+                client.send_lookup(lookup)
+            except exceptions.SmartyException as err:
+                self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 222", level=Qgis.Critical, duration=6)
+                return
+
+            result = lookup.result
+
+            if not result:
+                self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 228", level=Qgis.Critical, duration=6)
+                return
+
+            first_candidate = result[0]
+
+            message = ("Address is valid. (There is at least one candidate)" + "\nZIP Code: " + first_candidate.components.zipcode + 
+                "\nCounty: " + first_candidate.metadata.county_name + "\nLatitude: {}".format(first_candidate.metadata.latitude) + 
+                "\nLongitude: {}".format(first_candidate.metadata.longitude))
+
 
     def run(self):
         """Run method that performs all the real work"""
@@ -331,7 +378,7 @@ class Smarty:
             self.first_start = False
             self.dlg = SmartyDialog()
             self.dlg.pushButton.clicked.connect(self.smarty)
-            self.dlg.batch_button.clicked.connect(self.smarty2)
+            self.dlg.batch_button.clicked.connect(self.smarty_batch)
 
         # show the dialog
         self.dlg.show()

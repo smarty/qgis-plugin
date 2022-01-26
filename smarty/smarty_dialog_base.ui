@@ -21,7 +21,7 @@
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
-       <string>Tab 1</string>
+       <string>Single Lookup</string>
       </attribute>
       <widget class="QLabel" name="label_2">
        <property name="geometry">
@@ -177,7 +177,7 @@
      </widget>
      <widget class="QWidget" name="tab_2">
       <attribute name="title">
-       <string>Tab 2</string>
+       <string>Batch Lookup</string>
       </attribute>
       <widget class="QgsFileWidget" name="mQgsFileWidget">
        <property name="geometry">
@@ -212,7 +212,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Pick csv file:</string>
+        <string>Select a csv file:</string>
        </property>
       </widget>
      </widget>
