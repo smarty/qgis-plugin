@@ -34,8 +34,9 @@ from qgis.core import (QgsCoordinateReferenceSystem,
                        QgsGeometry,
                        QgsVectorLayer,
                        QgsFeature,
+                       QgsMarkerSymbol,
                        QgsNetworkAccessManager,
-                       QgsNetworkReplyContent, QgsProject, Qgis)
+                       QgsNetworkReplyContent, Qgis)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
@@ -261,7 +262,7 @@ class Smarty:
 
         layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
                            "Smarty",
-                           "memory")
+                           "memory") # TODO: can it exist disk
 
         longitude = first_candidate.metadata.longitude
         latitude = first_candidate.metadata.latitude
@@ -269,11 +270,18 @@ class Smarty:
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
         feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+        
 
         feature.setAttributes([address, myLicense])
 
+        # allow them to select the colors
+        symbol = QgsMarkerSymbol.createSimple({'name': 'regular_star', 'color': 'blue', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'10'})
+        # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
+        
         layer_out.dataProvider().addFeature(feature)
+        layer_out.renderer().setSymbol(symbol)
         layer_out.updateExtents()
+         # TODO: See if you can find an existing layers
         project.addMapLayer(layer_out)
 
         ############################################################################################################################
@@ -290,15 +298,29 @@ class Smarty:
         center_point = xform.transform(point_out)
         self.iface.mapCanvas().setCenter(center_point)
 
-        ### zoom
-        zoom = 22
+        ### zoom --> TODO:  Maybe demonstrate this and see what they prefer
+        zoom = 21
         if zoom is not None:
             # transform the zoom level to scale
             scale_value = 591657550.5 / 2 ** (zoom - 1)
+            self.iface.mapCanvas().zoomScale(scale_value)
 
         ############################################################################################################################                                                    
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
+
+    def smarty2(self):
+
+        filePath = self.dlg.mQgsFileWidget.filePath()
+        uri = filePath % ("UTF-8",",", "longitude", "latitude","epsg:4326")
+
+        self.iface.messageBar().pushMessage("Success: ", "Hello, world! LINE: 314 ........ File path: ", level=Qgis.Success, duration=6)
+
+        eq_layer = QgsVectorLayer(uri,"eq-data","delimitedtext")
+
+        project = QgsProject.instance()
+
+        project.addMapLayer(eq_layer)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -309,6 +331,7 @@ class Smarty:
             self.first_start = False
             self.dlg = SmartyDialog()
             self.dlg.pushButton.clicked.connect(self.smarty)
+            self.dlg.batch_button.clicked.connect(self.smarty2)
 
         # show the dialog
         self.dlg.show()
