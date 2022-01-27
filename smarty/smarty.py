@@ -26,17 +26,9 @@ from qgis.PyQt.QtGui import QIcon
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
 # from qgis.core import QgsProject, Qgis
-from qgis.core import (QgsCoordinateReferenceSystem,
-                       QgsCoordinateTransform,
-                       QgsProject,
-                       QgsRectangle,
-                       QgsPointXY,
-                       QgsGeometry,
-                       QgsVectorLayer,
-                       QgsFeature,
-                       QgsMarkerSymbol,
-                       QgsNetworkAccessManager,
-                       QgsNetworkReplyContent, Qgis)
+from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
+                       QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
+                       QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
@@ -282,7 +274,7 @@ class Smarty:
         layer_out.dataProvider().addFeature(feature)
         layer_out.renderer().setSymbol(symbol)
         layer_out.updateExtents()
-         # TODO: See if you can find an existing layers
+         # TODO: See if you can find an existing layer instead of making your own...
         project.addMapLayer(layer_out)
 
         ############################################################################################################################
@@ -299,7 +291,6 @@ class Smarty:
         center_point = xform.transform(point_out)
         self.iface.mapCanvas().setCenter(center_point)
 
-        ### zoom --> TODO:  Maybe demonstrate this and see what they prefer
         zoom = 21
         if zoom is not None:
             # transform the zoom level to scale
@@ -319,54 +310,93 @@ class Smarty:
         df = pd.read_csv(filePath)
 
         df.drop(['first_name', 'last_name', 'company_name', 'phone1', 'phone', 'email'], axis=1, inplace=True)
+
+
+        ## Set up the Smarty lookup
+        project = QgsProject.instance()
+
+        myLicense = "smarty.com"
+        
+        layer_name = self.dlg.layer_name.text()
+        if layer_name == "":
+            layer_name = "Smarty"
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
+                           layer_name,
+                           "memory") # TODO: can it exist disk
+        
+        
+        auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
+        auth_token = "nD3IIoyZ3H4LSzNp6qpl"
         
         for index, row in df.iterrows():
+            
             street = row['address']
             city = row['city']
             state = row['state']
             zipcode = str(row['zip'])
 
-
-
-            auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
-            auth_token = "nD3IIoyZ3H4LSzNp6qpl"
-
+            #Start smarty processing
             credentials = StaticCredentials(auth_id, auth_token)
 
             client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
 
             lookup = StreetLookup()
-            #lookup.input_id = "24601"  # Optional ID from your system ##################################
-            
-            #lookup.addressee = self.dlg.addressee.text()  #### I took this off the form
             lookup.street = street
             lookup.street2 = ""
             lookup.secondary = ""
-            #lookup.urbanization = self.dlg.urbanization.text() #### I took this off the form
             lookup.city = city
             lookup.state = state
             lookup.zipcode = zipcode
-            #### lookup.candidates = self.dlg.candidates.text().toInt()   #### just took candidates off the form :]
             lookup.candidates = 3
-            lookup.match = "invalid" ### just took match off the form :]
+            lookup.match = "invalid" 
 
             try:
                 client.send_lookup(lookup)
             except exceptions.SmartyException as err:
                 self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 222", level=Qgis.Critical, duration=6)
-                return
+                continue # return
+                # FIXME: you need to think about appending a list of addresses that break the system
 
             result = lookup.result
 
             if not result:
                 self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 228", level=Qgis.Critical, duration=6)
-                return
+                continue # return
+                # FIXME: you need to think about appending a list of addresses that invalid addresses
 
             first_candidate = result[0]
 
-            message = ("Address is valid. (There is at least one candidate)" + "\nZIP Code: " + first_candidate.components.zipcode + 
-                "\nCounty: " + first_candidate.metadata.county_name + "\nLatitude: {}".format(first_candidate.metadata.latitude) + 
-                "\nLongitude: {}".format(first_candidate.metadata.longitude))
+
+            longitude = first_candidate.metadata.longitude
+            latitude = first_candidate.metadata.latitude
+
+            address = ("Address: ZIP Code: " + first_candidate.components.zipcode + 
+            "County: " + first_candidate.metadata.county_name + "Latitude: {}".format(first_candidate.metadata.latitude) + 
+            "Longitude: {}".format(first_candidate.metadata.longitude))
+
+            point_out = QgsPointXY(longitude, latitude)
+            feature = QgsFeature()
+            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+            
+            feature.setAttributes([address, myLicense])
+
+            # TODO: allow them to select the colors ################################################################################
+            # TODO: allow them to choose different symbols
+            symbol_type = self.dlg.symbol_drop_down.currentIndex()
+            color = self.dlg.symbol_color
+            symbol = QgsMarkerSymbol.createSimple({'name': 'circle', 'color': 'blue', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'10'})
+            symbol.setColor(color)
+            # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
+            
+            layer_out.dataProvider().addFeature(feature)
+            layer_out.renderer().setSymbol(symbol)
+            layer_out.updateExtents()
+                # TODO: See if you can find an existing layers
+        
+        project.addMapLayer(layer_out)
+
+
+            # TODO: output a list of the validate and non validated addresses?
 
 
     def run(self):
@@ -379,6 +409,14 @@ class Smarty:
             self.dlg = SmartyDialog()
             self.dlg.pushButton.clicked.connect(self.smarty)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
+
+        # TODO: gather all the output options
+        symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
+
+        self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
+
+        # TODO: This is not working
+        self.dlg.symbol_color.defaultColor()
 
         # show the dialog
         self.dlg.show()
