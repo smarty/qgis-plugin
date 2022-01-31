@@ -404,6 +404,7 @@ class Smarty:
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
     
     def hide_feature_box(self):
+        # You could maybe do something like adjust the height of the box if it is checked?
         self.dlg.frame.hide()
 
     def run(self):
