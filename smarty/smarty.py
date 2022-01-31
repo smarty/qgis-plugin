@@ -41,6 +41,7 @@ from .resources import *
 from .smarty_dialog import SmartyDialog
 import os.path
 import pandas as pd
+import webbrowser
 
 
 class Smarty:
@@ -197,7 +198,13 @@ class Smarty:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def smarty(self):
+    def set_symbol(self, color, symbol):
+        # TODO: grab all the symbols in a proper manner
+        symbol = QgsMarkerSymbol.createSimple({'name': symbol, 'color': color, 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'8'})
+
+        return symbol
+
+    def smarty_single(self):
     
         auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
         auth_token = "nD3IIoyZ3H4LSzNp6qpl"
@@ -262,14 +269,12 @@ class Smarty:
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
-        feature.setGeometry(QgsGeometry.fromPointXY(point_out))
-        
+        feature.setGeometry(QgsGeometry.fromPointXY(point_out))        
 
+        # TODO: Berk wants more attributes set here
         feature.setAttributes([address, myLicense])
 
-        # allow them to select the colors
-        symbol = QgsMarkerSymbol.createSimple({'name': 'regular_star', 'color': 'blue', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'10'})
-        # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
+        symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText())
         
         layer_out.dataProvider().addFeature(feature)
         layer_out.renderer().setSymbol(symbol)
@@ -281,25 +286,27 @@ class Smarty:
 
                                                             ######### ZOOM TO BOUNDING BOX 
         
-        #center_point_in = QgsPointXY(lon, lat)
-        
-        # convert coordinates
-        crsSrc = QgsCoordinateReferenceSystem(4326)  # WGS84
-        crsDest = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
-        xform = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance())
-        # forward transformation: src -> dest
-        center_point = xform.transform(point_out)
-        self.iface.mapCanvas().setCenter(center_point)
+        if self.dlg.zoom_in.isChecked(): 
+            # convert coordinates
+            crsSrc = QgsCoordinateReferenceSystem(4326)  # WGS84
+            crsDest = QgsCoordinateReferenceSystem(QgsProject.instance().crs())
+            xform = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance())
+            # forward transformation: src -> dest
+            center_point = xform.transform(point_out)
+            self.iface.mapCanvas().setCenter(center_point)
 
-        zoom = 21
-        if zoom is not None:
-            # transform the zoom level to scale
-            scale_value = 591657550.5 / 2 ** (zoom - 1)
-            self.iface.mapCanvas().zoomScale(scale_value)
+            zoom = 16.7
+            if zoom is not None:
+                # transform the zoom level to scale
+                scale_value = 591657550.5 / 2 ** (zoom - 1)
+                self.iface.mapCanvas().zoomScale(scale_value)
 
         ############################################################################################################################                                                    
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
+
+        # Set the text of a label if something happens
+        self.dlg.label_14.setText("Hello :)")
 
     def smarty_batch(self):
 
@@ -380,12 +387,7 @@ class Smarty:
             
             feature.setAttributes([address, myLicense])
 
-            # TODO: allow them to select the colors ################################################################################
-            # TODO: allow them to choose different symbols
-            symbol_type = self.dlg.symbol_drop_down.currentIndex()
-            color = self.dlg.symbol_color
-            symbol = QgsMarkerSymbol.createSimple({'name': 'circle', 'color': 'blue', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'10'})
-            symbol.setColor(color)
+            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
             # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
             
             layer_out.dataProvider().addFeature(feature)
@@ -395,9 +397,14 @@ class Smarty:
         
         project.addMapLayer(layer_out)
 
+            # TODO: output a list of the validated and non validated addresses?
 
-            # TODO: output a list of the validate and non validated addresses?
-
+    def smarty_web_link(self):
+        # FIXME: Im not sure if bringing in library is the best idea?
+        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
+    
+    def hide_feature_box(self):
+        self.dlg.frame.hide()
 
     def run(self):
         """Run method that performs all the real work"""
@@ -407,13 +414,18 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
-            self.dlg.pushButton.clicked.connect(self.smarty)
+            self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
+            self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
+            # TODO: So this works... However, I need to figure out how to do it so its A) Blurred out and then B) make it toggable
+            self.dlg.hide_features.clicked.connect(self.hide_feature_box)
 
         # TODO: gather all the output options
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
+        self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
+        # TODO: if there are any layers than select all the layers to choose a layer to add the single entered address onto it?
 
         # TODO: This is not working
         self.dlg.symbol_color.defaultColor()
