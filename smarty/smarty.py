@@ -214,17 +214,12 @@ class Smarty:
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
 
         lookup = StreetLookup()
-        #lookup.input_id = "24601"  # Optional ID from your system ##################################
         
-        #lookup.addressee = self.dlg.addressee.text()  #### I took this off the form
         lookup.street = self.dlg.street.text() 
         lookup.street2 = self.dlg.street2.text()
-        lookup.secondary = self.dlg.secondary.text()
-        #lookup.urbanization = self.dlg.urbanization.text() #### I took this off the form
         lookup.city = self.dlg.city.text() 
         lookup.state = self.dlg.state.text() 
         lookup.zipcode = self.dlg.zipcode.text()
-        #### lookup.candidates = self.dlg.candidates.text().toInt()   #### just took candidates off the form :]
         lookup.candidates = 3
         lookup.match = "invalid" ### just took match off the form :]
 
@@ -249,30 +244,39 @@ class Smarty:
         ############################################################################################################################
 
                                                             ######### PROCESS LAT AND LONG
-        # x = long and y = lat Im pretty sure...
-        #### *** Take the lat and long and send it to whatever will set the dot on the map *** ####
         project = QgsProject.instance()
 
-        address = ("Address: ZIP Code: " + first_candidate.components.zipcode + 
-            "County: " + first_candidate.metadata.county_name + "Latitude: {}".format(first_candidate.metadata.latitude) + 
-            "Longitude: {}".format(first_candidate.metadata.longitude))
+        layer_name = self.dlg.layer_name_single.text()
+        if layer_name == "":
+            layer_name = "Smarty"
 
-        #### I Don't think 
-        myLicense = "smarty.com"
-
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
-                           "Smarty",
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
+                           layer_name,
                            "memory") # TODO: can it exist disk
 
+        address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
         longitude = first_candidate.metadata.longitude
         latitude = first_candidate.metadata.latitude
+        city = first_candidate.components.city_name
+        state = first_candidate.components.state_abbreviation
+        zip_code = first_candidate.components.zipcode
+        zip_4 = first_candidate.components.plus4_code
+        precision = first_candidate.metadata.precision
+        county = first_candidate.metadata.county_name
+        county_fips = first_candidate.metadata.county_fips
+        rdi = first_candidate.metadata.rdi
+        congressional_district = first_candidate.metadata.congressional_district
+        time_zone = first_candidate.metadata.time_zone
+        carrier_route = first_candidate.metadata.carrier_route
+        dpv_footnotes = first_candidate.analysis.dpv_footnotes
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
         feature.setGeometry(QgsGeometry.fromPointXY(point_out))        
 
         # TODO: Berk wants more attributes set here
-        feature.setAttributes([address, myLicense])
+        feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+                             county_fips, rdi, congressional_district, time_zone, carrier_route, dpv_footnotes]) #myLicense
 
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText())
         
@@ -332,8 +336,8 @@ class Smarty:
                            "memory") # TODO: can it exist disk
         
         
-        auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
-        auth_token = "nD3IIoyZ3H4LSzNp6qpl"
+        auth_id = self.dlg.auth_id.text() # "c21cabd2-1a89-7746-e799-d35d70d7080b" #
+        auth_token = self.dlg.auth_token.text() # "nD3IIoyZ3H4LSzNp6qpl" #
         
         for index, row in df.iterrows():
             
@@ -385,6 +389,7 @@ class Smarty:
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(point_out))
             
+            ###########################################################
             feature.setAttributes([address, myLicense])
 
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
@@ -400,12 +405,24 @@ class Smarty:
             # TODO: output a list of the validated and non validated addresses?
 
     def smarty_web_link(self):
-        # FIXME: Im not sure if bringing in library is the best idea?
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
     
-    def hide_feature_box(self):
-        # You could maybe do something like adjust the height of the box if it is checked?
-        self.dlg.frame.hide()
+    def enable_box(self):
+        auth_id_len = len(self.dlg.auth_id.text())
+        auth_token_len = len(self.dlg.auth_token.text())
+        
+        # TODO: Figure out a different way to communicate with user -- and tell them to buy a plan
+        if auth_id_len == 0 and auth_token_len == 0:
+            self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID and an Auth Token", level=Qgis.Critical, duration=6)
+            return
+        elif auth_id_len == 0:
+            self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID", level=Qgis.Critical, duration=6)
+            return
+        elif auth_token_len == 0:
+            self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth Token", level=Qgis.Critical, duration=6)
+            return
+        
+        self.dlg.frame.setEnabled(True)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -415,11 +432,11 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
+            self.dlg.frame.setDisabled(True)
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
-            # TODO: So this works... However, I need to figure out how to do it so its A) Blurred out and then B) make it toggable
-            self.dlg.hide_features.clicked.connect(self.hide_feature_box)
+            self.dlg.add_tokens.clicked.connect(self.enable_box)
 
         # TODO: gather all the output options
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
