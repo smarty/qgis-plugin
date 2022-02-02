@@ -226,13 +226,13 @@ class Smarty:
         try:
             client.send_lookup(lookup)
         except exceptions.SmartyException as err:
-            self.iface.messageBar().pushMessage("FAIL: ", "Goodbye, world! LINE: 222", level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("FAIL: ", "Make sure your Auth ID and Auth Token are entered correctly. Or visit our site to buy a subscription", level=Qgis.Critical, duration=6)
             return
 
         result = lookup.result
 
         if not result:
-            self.iface.messageBar().pushMessage("NO MATCH: ", "Goodbye, world! LINE 228", level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("NO MATCH: ", "There was no match found for this address.", level=Qgis.Critical, duration=6)
             return
 
         first_candidate = result[0]
@@ -253,6 +253,7 @@ class Smarty:
         layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
                            layer_name,
                            "memory") # TODO: can it exist disk
+        
 
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
         longitude = first_candidate.metadata.longitude
@@ -320,6 +321,7 @@ class Smarty:
 
         df = pd.read_csv(filePath)
 
+        # FIXME: We need to make this more usable haha
         df.drop(['first_name', 'last_name', 'company_name', 'phone1', 'phone', 'email'], axis=1, inplace=True)
 
 
@@ -331,10 +333,10 @@ class Smarty:
         layer_name = self.dlg.layer_name.text()
         if layer_name == "":
             layer_name = "Smarty"
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=license:string",
-                           layer_name,
-                           "memory") # TODO: can it exist disk
-        
+ 
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
+                layer_name,
+                "memory") # TODO: can it exist disk
         
         auth_id = self.dlg.auth_id.text() # "c21cabd2-1a89-7746-e799-d35d70d7080b" #
         auth_token = self.dlg.auth_token.text() # "nD3IIoyZ3H4LSzNp6qpl" #
@@ -353,8 +355,6 @@ class Smarty:
 
             lookup = StreetLookup()
             lookup.street = street
-            lookup.street2 = ""
-            lookup.secondary = ""
             lookup.city = city
             lookup.state = state
             lookup.zipcode = zipcode
@@ -381,16 +381,30 @@ class Smarty:
             longitude = first_candidate.metadata.longitude
             latitude = first_candidate.metadata.latitude
 
-            address = ("Address: ZIP Code: " + first_candidate.components.zipcode + 
-            "County: " + first_candidate.metadata.county_name + "Latitude: {}".format(first_candidate.metadata.latitude) + 
-            "Longitude: {}".format(first_candidate.metadata.longitude))
+            address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
+            longitude = first_candidate.metadata.longitude
+            latitude = first_candidate.metadata.latitude
+            city = first_candidate.components.city_name
+            state = first_candidate.components.state_abbreviation
+            zip_code = first_candidate.components.zipcode
+            zip_4 = first_candidate.components.plus4_code
+            precision = first_candidate.metadata.precision
+            county = first_candidate.metadata.county_name
+            county_fips = first_candidate.metadata.county_fips
+            rdi = first_candidate.metadata.rdi
+            congressional_district = first_candidate.metadata.congressional_district
+            time_zone = first_candidate.metadata.time_zone
+            carrier_route = first_candidate.metadata.carrier_route
+            dpv_footnotes = first_candidate.analysis.dpv_footnotes
 
             point_out = QgsPointXY(longitude, latitude)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(point_out))
             
             ###########################################################
-            feature.setAttributes([address, myLicense])
+            feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+                        county_fips, rdi, congressional_district, time_zone, carrier_route, dpv_footnotes])
+            feature.setAttributes([address, myLicense]) # FIXME:
 
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
             # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
@@ -424,6 +438,12 @@ class Smarty:
         
         self.dlg.frame.setEnabled(True)
 
+    def extend_dialogue(self): ########################## FIXME: maybe look into --> https://stackoverflow.com/questions/32476006/how-to-make-an-expandable-collapsable-section-widget-in-qt
+        ################################################# Or look into doing combo box
+        ################################################# On click resize the box?
+        self.dlg.extendable.show()
+        self.dlg.extendable.setVisible(True)
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -433,10 +453,12 @@ class Smarty:
             self.first_start = False
             self.dlg = SmartyDialog()
             self.dlg.frame.setDisabled(True)
+            self.dlg.extendable.setVisible(False)
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
+            self.dlg.extend.clicked.connect(self.extend_dialogue)
 
         # TODO: gather all the output options
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
