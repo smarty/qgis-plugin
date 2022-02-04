@@ -215,13 +215,15 @@ class Smarty:
 
         lookup = StreetLookup()
         
-        lookup.street = self.dlg.street.text() 
-        lookup.street2 = self.dlg.street2.text()
-        lookup.city = self.dlg.city.text() 
-        lookup.state = self.dlg.state.text() 
-        lookup.zipcode = self.dlg.zipcode.text()
-        lookup.candidates = 3
-        lookup.match = "invalid" ### just took match off the form :]
+        if len(self.dlg.single_address_lookup.text()) > 0:
+            lookup.street = self.dlg.single_address_lookup.text()
+        else:
+            lookup.street = self.dlg.street.text() 
+            lookup.city = self.dlg.city.text() 
+            lookup.state = self.dlg.state.text() 
+            lookup.zipcode = self.dlg.zipcode.text()
+            lookup.candidates = 3
+            lookup.match = "invalid" ### just took match off the form :]
 
         try:
             client.send_lookup(lookup)
@@ -255,6 +257,7 @@ class Smarty:
                            "memory") # TODO: can it exist disk
         
 
+        # Set the attributes for the feild
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
         longitude = first_candidate.metadata.longitude
         latitude = first_candidate.metadata.latitude
@@ -270,6 +273,25 @@ class Smarty:
         time_zone = first_candidate.metadata.time_zone
         carrier_route = first_candidate.metadata.carrier_route
         dpv_footnotes = first_candidate.analysis.dpv_footnotes
+        
+        # Set up output of results
+        self.dlg.address_result.setText(address)
+        self.dlg.city_result.setText(city)
+        self.dlg.state_result.setText(state)
+        self.dlg.zip_result.setText(zip_code)
+        self.dlg.zip_4_result.setText(zip_4)
+        self.dlg.latitude_result.setText(str(latitude))
+        self.dlg.longitude_result.setText(str(longitude))
+        self.dlg.precision_result.setText(precision)
+
+        # Set up output of Meta Data results
+        self.dlg.county_name_result.setText(county)
+        self.dlg.county_fips_result.setText(county_fips)
+        self.dlg.rdi_result.setText(rdi)
+        self.dlg.congressional_district_result.setText(congressional_district)
+        self.dlg.time_zone_result.setText(time_zone)
+        self.dlg.carrier_route_result.setText(carrier_route)
+        self.dlg.dpv_footnotes_result.setText(dpv_footnotes)
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
@@ -309,9 +331,6 @@ class Smarty:
         ############################################################################################################################                                                    
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
-
-        # Set the text of a label if something happens
-        self.dlg.label_14.setText("Hello :)")
 
     def smarty_batch(self):
 
@@ -437,12 +456,14 @@ class Smarty:
             return
         
         self.dlg.frame.setEnabled(True)
-
-    def extend_dialogue(self): ########################## FIXME: maybe look into --> https://stackoverflow.com/questions/32476006/how-to-make-an-expandable-collapsable-section-widget-in-qt
-        ################################################# Or look into doing combo box
-        ################################################# On click resize the box?
-        self.dlg.extendable.show()
-        self.dlg.extendable.setVisible(True)
+    
+    def meta_resize(self):
+        if self.dlg.meta_data.isChecked():
+            self.dlg.resize(627,750)
+            self.dlg.meta_data_results.setVisible(True)
+        else:
+            self.dlg.resize(627,586)
+            self.dlg.meta_data_results.setVisible(False)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -453,14 +474,15 @@ class Smarty:
             self.first_start = False
             self.dlg = SmartyDialog()
             self.dlg.frame.setDisabled(True)
-            self.dlg.extendable.setVisible(False)
+            self.dlg.extendable.setVisible(False) # FIXME: am I using this?
+            self.dlg.meta_data_results.setVisible(False)
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
-            self.dlg.extend.clicked.connect(self.extend_dialogue)
+            self.dlg.meta_data.clicked.connect(self.meta_resize)
 
-        # TODO: gather all the output options
+        # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
