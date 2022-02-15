@@ -255,7 +255,6 @@ class Smarty:
         layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
                            layer_name,
                            "memory") # TODO: can it exist disk
-        
 
         # Set the attributes for the feild
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
@@ -273,6 +272,9 @@ class Smarty:
         time_zone = first_candidate.metadata.time_zone
         carrier_route = first_candidate.metadata.carrier_route
         dpv_footnotes = first_candidate.analysis.dpv_footnotes
+
+        self.dlg.resize(627,586)
+        self.dlg.results.setVisible(True)
         
         # Set up output of results
         self.dlg.address_result.setText(address)
@@ -396,7 +398,6 @@ class Smarty:
 
             first_candidate = result[0]
 
-
             longitude = first_candidate.metadata.longitude
             latitude = first_candidate.metadata.latitude
 
@@ -464,6 +465,11 @@ class Smarty:
         else:
             self.dlg.resize(627,586)
             self.dlg.meta_data_results.setVisible(False)
+    
+    def refresh_layers(self):
+        layers = QgsProject.instance().layerTreeRoot().children()
+        self.dlg.layer_box.clear()
+        self.dlg.layer_box.addItems([layer.name() for layer in layers])
 
     def run(self):
         """Run method that performs all the real work"""
@@ -476,21 +482,20 @@ class Smarty:
             self.dlg.frame.setDisabled(True)
             self.dlg.extendable.setVisible(False) # FIXME: am I using this?
             self.dlg.meta_data_results.setVisible(False)
+            self.dlg.results.setVisible(False)
+            self.refresh_layers()
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
             self.dlg.meta_data.clicked.connect(self.meta_resize)
+            self.dlg.refresh_layers.clicked.connect(self.refresh_layers)
 
         # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
         self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
-        # TODO: if there are any layers than select all the layers to choose a layer to add the single entered address onto it?
-
-        # TODO: This is not working
-        self.dlg.symbol_color.defaultColor()
 
         # show the dialog
         self.dlg.show()
