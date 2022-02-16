@@ -198,12 +198,6 @@ class Smarty:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def set_symbol(self, color, symbol):
-        # TODO: grab all the symbols in a proper manner
-        symbol = QgsMarkerSymbol.createSimple({'name': symbol, 'color': color, 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'8'})
-
-        return symbol
-
     def smarty_single(self):
     
         auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
@@ -248,13 +242,19 @@ class Smarty:
                                                             ######### PROCESS LAT AND LONG
         project = QgsProject.instance()
 
-        layer_name = self.dlg.layer_name_single.text()
-        if layer_name == "":
-            layer_name = "Smarty"
+        if self.dlg.new_layer_radio.isChecked():
+            layer_name = self.dlg.layer_name_single.text()
+            
+            if layer_name == "":
+                layer_name = "Smarty"
 
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
                            layer_name,
                            "memory") # TODO: can it exist disk
+        else:
+            layers = QgsProject.instance().layerTreeRoot().children()
+            selectedLayerIndex = self.dlg.layer_box.currentIndex()
+            layer_out = layers[selectedLayerIndex].layer()
 
         # Set the attributes for the feild
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
@@ -330,7 +330,9 @@ class Smarty:
                 scale_value = 591657550.5 / 2 ** (zoom - 1)
                 self.iface.mapCanvas().zoomScale(scale_value)
 
-        ############################################################################################################################                                                    
+        ############################################################################################################################  
+        
+        self.refresh_layers()                                                  
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
 
@@ -440,6 +442,12 @@ class Smarty:
 
     def smarty_web_link(self):
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
+
+    def set_symbol(self, color, symbol):
+        # TODO: grab all the symbols in a proper manner
+        symbol = QgsMarkerSymbol.createSimple({'name': symbol, 'color': color, 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'8'})
+
+        return symbol
     
     def enable_box(self):
         auth_id_len = len(self.dlg.auth_id.text())
@@ -470,6 +478,27 @@ class Smarty:
         layers = QgsProject.instance().layerTreeRoot().children()
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers])
+    
+    def fill_symbols(self):
+        # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
+        symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
+
+        self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
+        self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
+
+    def show_new_layer(self):
+        self.dlg.stacked_widget.setCurrentIndex(0)
+        self.dlg.stacked_widget.setVisible(True)
+
+        self.dlg.new_layer_frame.setDisabled(False)
+        self.dlg.new_layer_frame.setVisible(True)
+
+    def show_existing_layer(self):
+        self.dlg.stacked_widget.setVisible(True)
+        self.dlg.stacked_widget.setCurrentIndex(1)
+        
+        self.dlg.existing_layer_frame.setVisible(True)
+        self.dlg.existing_layer_frame.setDisabled(False)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -479,23 +508,31 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
-            self.dlg.frame.setDisabled(True)
-            self.dlg.extendable.setVisible(False) # FIXME: am I using this?
-            self.dlg.meta_data_results.setVisible(False)
-            self.dlg.results.setVisible(False)
-            self.refresh_layers()
+            
+            # Listen for clicked buttons
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
             self.dlg.meta_data.clicked.connect(self.meta_resize)
-            self.dlg.refresh_layers.clicked.connect(self.refresh_layers)
+            self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
+            self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
 
-        # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
-        symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
+            # Disable sections of dialogue box
+            self.dlg.frame.setDisabled(True)
+            self.dlg.new_layer_frame.setDisabled(True)
+            self.dlg.existing_layer_frame.setDisabled(True)
 
-        self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
-        self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
+            # Fill drop downs
+            self.refresh_layers()
+            self.fill_symbols()
+
+            # Set correct visibility
+            self.dlg.extendable.setVisible(False) # FIXME: am I using this?
+            self.dlg.meta_data_results.setVisible(False)
+            self.dlg.results.setVisible(False)
+            self.dlg.stacked_widget.setVisible(False)
+
 
         # show the dialog
         self.dlg.show()
