@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>610</width>
-    <height>387</height>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,9 +26,9 @@
       <widget class="QPushButton" name="pushButton">
        <property name="geometry">
         <rect>
-         <x>30</x>
+         <x>190</x>
          <y>290</y>
-         <width>541</width>
+         <width>381</width>
          <height>41</height>
         </rect>
        </property>
@@ -39,8 +39,8 @@
       <widget class="QCheckBox" name="zoom_in">
        <property name="geometry">
         <rect>
-         <x>480</x>
-         <y>210</y>
+         <x>300</x>
+         <y>250</y>
          <width>86</width>
          <height>20</height>
         </rect>
@@ -52,9 +52,9 @@
       <widget class="QgsColorButton" name="symbol_color_single">
        <property name="geometry">
         <rect>
-         <x>470</x>
+         <x>500</x>
          <y>250</y>
-         <width>101</width>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
@@ -62,7 +62,7 @@
       <widget class="QLabel" name="label_11">
        <property name="geometry">
         <rect>
-         <x>370</x>
+         <x>400</x>
          <y>250</y>
          <width>91</width>
          <height>16</height>
@@ -88,24 +88,11 @@
       <widget class="QComboBox" name="symbol_drop_down_single">
        <property name="geometry">
         <rect>
-         <x>140</x>
+         <x>110</x>
          <y>250</y>
-         <width>221</width>
+         <width>161</width>
          <height>21</height>
         </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_14">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>300</y>
-         <width>60</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string/>
        </property>
       </widget>
       <widget class="QTabWidget" name="tabWidget_2">
@@ -122,7 +109,7 @@
        </property>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
-         <string>Single Line</string>
+         <string>Single Line Address</string>
         </attribute>
         <widget class="QLabel" name="label_3">
          <property name="geometry">
@@ -157,7 +144,7 @@
        </widget>
        <widget class="QWidget" name="tab_4">
         <attribute name="title">
-         <string>Multiple Line</string>
+         <string>Multiple Line Address</string>
         </attribute>
         <widget class="QLabel" name="label_2">
          <property name="geometry">
@@ -571,7 +558,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Meta Data</string>
+        <string>Metadata</string>
        </property>
       </widget>
       <widget class="QFrame" name="meta_data_results">
@@ -580,7 +567,7 @@
          <x>20</x>
          <y>550</y>
          <width>551</width>
-         <height>131</height>
+         <height>101</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -632,7 +619,7 @@
        <widget class="QLabel" name="label_29">
         <property name="geometry">
          <rect>
-          <x>10</x>
+          <x>340</x>
           <y>70</y>
           <width>60</width>
           <height>16</height>
@@ -652,7 +639,7 @@
        <widget class="QLabel" name="label_30">
         <property name="geometry">
          <rect>
-          <x>300</x>
+          <x>340</x>
           <y>10</y>
           <width>81</width>
           <height>16</height>
@@ -669,51 +656,11 @@
          <string>Time Zone:</string>
         </property>
        </widget>
-       <widget class="QLabel" name="label_31">
-        <property name="geometry">
-         <rect>
-          <x>300</x>
-          <y>40</y>
-          <width>101</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Carrier Route:</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_32">
-        <property name="geometry">
-         <rect>
-          <x>300</x>
-          <y>70</y>
-          <width>101</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>DPV Footnotes:</string>
-        </property>
-       </widget>
        <widget class="QLabel" name="label_33">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>100</y>
+          <y>70</y>
           <width>161</width>
           <height>16</height>
          </rect>
@@ -732,8 +679,8 @@
        <widget class="QLabel" name="label_34">
         <property name="geometry">
          <rect>
-          <x>300</x>
-          <y>100</y>
+          <x>340</x>
+          <y>40</y>
           <width>71</width>
           <height>16</height>
          </rect>
@@ -778,9 +725,9 @@
        <widget class="QLabel" name="rdi_result">
         <property name="geometry">
          <rect>
-          <x>180</x>
+          <x>450</x>
           <y>70</y>
-          <width>111</width>
+          <width>91</width>
           <height>20</height>
          </rect>
         </property>
@@ -792,7 +739,7 @@
         <property name="geometry">
          <rect>
           <x>180</x>
-          <y>100</y>
+          <y>60</y>
           <width>111</width>
           <height>21</height>
          </rect>
@@ -804,9 +751,9 @@
        <widget class="QLabel" name="time_zone_result">
         <property name="geometry">
          <rect>
-          <x>410</x>
+          <x>450</x>
           <y>10</y>
-          <width>131</width>
+          <width>91</width>
           <height>20</height>
          </rect>
         </property>
@@ -817,9 +764,9 @@
        <widget class="QLabel" name="carrier_route_result">
         <property name="geometry">
          <rect>
-          <x>410</x>
+          <x>450</x>
           <y>40</y>
-          <width>131</width>
+          <width>91</width>
           <height>21</height>
          </rect>
         </property>
@@ -830,9 +777,9 @@
        <widget class="QLabel" name="dpv_footnotes_result">
         <property name="geometry">
          <rect>
-          <x>410</x>
+          <x>450</x>
           <y>70</y>
-          <width>131</width>
+          <width>91</width>
           <height>20</height>
          </rect>
         </property>
@@ -890,7 +837,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>190</y>
+         <y>180</y>
          <width>111</width>
          <height>21</height>
         </rect>
@@ -899,45 +846,26 @@
         <string>Existing Layer</string>
        </property>
       </widget>
-      <widget class="QFrame" name="layer_stacked">
-       <property name="geometry">
-        <rect>
-         <x>140</x>
-         <y>160</y>
-         <width>331</width>
-         <height>51</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">border:0</string>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-      </widget>
       <widget class="QStackedWidget" name="stacked_widget">
        <property name="geometry">
         <rect>
-         <x>120</x>
+         <x>110</x>
          <y>150</y>
-         <width>361</width>
-         <height>51</height>
+         <width>241</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="page">
         <widget class="QFrame" name="new_layer_frame">
          <property name="geometry">
           <rect>
-           <x>0</x>
+           <x>10</x>
            <y>10</y>
-           <width>331</width>
-           <height>31</height>
+           <width>211</width>
+           <height>21</height>
           </rect>
          </property>
          <property name="styleSheet">
@@ -952,8 +880,8 @@
          <widget class="QLabel" name="label_18">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>10</y>
+            <x>0</x>
+            <y>0</y>
             <width>81</width>
             <height>21</height>
            </rect>
@@ -965,10 +893,10 @@
          <widget class="QLineEdit" name="layer_name_single">
           <property name="geometry">
            <rect>
-            <x>110</x>
-            <y>10</y>
-            <width>211</width>
-            <height>21</height>
+            <x>90</x>
+            <y>0</y>
+            <width>111</width>
+            <height>16</height>
            </rect>
           </property>
          </widget>
@@ -996,10 +924,10 @@
          <widget class="QComboBox" name="layer_box">
           <property name="geometry">
            <rect>
-            <x>110</x>
-            <y>10</y>
-            <width>221</width>
-            <height>21</height>
+            <x>80</x>
+            <y>0</y>
+            <width>121</width>
+            <height>16</height>
            </rect>
           </property>
           <property name="styleSheet">
@@ -1009,8 +937,8 @@
          <widget class="QLabel" name="label_35">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>10</y>
+            <x>0</x>
+            <y>0</y>
             <width>91</width>
             <height>16</height>
            </rect>
@@ -1019,8 +947,86 @@
            <string>Select Layer:</string>
           </property>
          </widget>
+         <widget class="QFrame" name="layer_stacked">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>-10</y>
+            <width>251</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">border:0</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+         </widget>
         </widget>
        </widget>
+      </widget>
+      <widget class="QLabel" name="label_36">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>220</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Point Label:</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="point_label">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>220</y>
+         <width>161</width>
+         <height>21</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="smarty_link_1">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>290</y>
+         <width>171</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Visit Smarty</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="save_shapefile">
+       <property name="geometry">
+        <rect>
+         <x>460</x>
+         <y>220</y>
+         <width>111</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Save Shapefile</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="save_shapefile_drop">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>220</y>
+         <width>161</width>
+         <height>21</height>
+        </rect>
+       </property>
       </widget>
      </widget>
      <widget class="QWidget" name="tab_2">
@@ -1161,7 +1167,7 @@
         </property>
        </widget>
       </widget>
-      <widget class="QPushButton" name="smarty_link">
+      <widget class="QPushButton" name="smarty_link_2">
        <property name="geometry">
         <rect>
          <x>350</x>

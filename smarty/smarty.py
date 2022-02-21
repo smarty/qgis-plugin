@@ -22,13 +22,15 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon, QColor
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
-                       QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis)
+                       QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
+                       QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
+                       QgsVectorFileWriter, QgsCoordinateTransformContext)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
@@ -217,7 +219,7 @@ class Smarty:
             lookup.state = self.dlg.state.text() 
             lookup.zipcode = self.dlg.zipcode.text()
             lookup.candidates = 3
-            lookup.match = "invalid" ### just took match off the form :]
+            lookup.match = "invalid"
 
         try:
             client.send_lookup(lookup)
@@ -227,6 +229,7 @@ class Smarty:
 
         result = lookup.result
 
+        # It is hitting here when we give it a bogus address - so our result isnt even getting set...
         if not result:
             self.iface.messageBar().pushMessage("NO MATCH: ", "There was no match found for this address.", level=Qgis.Critical, duration=6)
             return
@@ -247,16 +250,24 @@ class Smarty:
             
             if layer_name == "":
                 layer_name = "Smarty"
-
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
-                           layer_name,
-                           "memory") # TODO: can it exist disk
+            
+            if len(self.dlg.point_label.text()) == 0:
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string",
+                layer_name,
+                "memory") # TODO: can it exist disk
+            else:
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=label:string",
+                layer_name,
+                "memory") # TODO: can it exist disk
         else:
             layers = QgsProject.instance().layerTreeRoot().children()
             selectedLayerIndex = self.dlg.layer_box.currentIndex()
             layer_out = layers[selectedLayerIndex].layer()
 
+        # TODO: If neither of them are clicked then throw message, or deafualt to Smarty
+
         # Set the attributes for the feild
+        # TODO: Put this in a function so it is not repeated
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
         longitude = first_candidate.metadata.longitude
         latitude = first_candidate.metadata.latitude
@@ -268,10 +279,8 @@ class Smarty:
         county = first_candidate.metadata.county_name
         county_fips = first_candidate.metadata.county_fips
         rdi = first_candidate.metadata.rdi
-        congressional_district = first_candidate.metadata.congressional_district
+        cong_dist = first_candidate.metadata.congressional_district
         time_zone = first_candidate.metadata.time_zone
-        carrier_route = first_candidate.metadata.carrier_route
-        dpv_footnotes = first_candidate.analysis.dpv_footnotes
 
         self.dlg.resize(627,586)
         self.dlg.results.setVisible(True)
@@ -290,23 +299,35 @@ class Smarty:
         self.dlg.county_name_result.setText(county)
         self.dlg.county_fips_result.setText(county_fips)
         self.dlg.rdi_result.setText(rdi)
-        self.dlg.congressional_district_result.setText(congressional_district)
+        self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
-        self.dlg.carrier_route_result.setText(carrier_route)
-        self.dlg.dpv_footnotes_result.setText(dpv_footnotes)
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
-        feature.setGeometry(QgsGeometry.fromPointXY(point_out))        
+        feature.setGeometry(QgsGeometry.fromPointXY(point_out)) 
 
-        # TODO: Berk wants more attributes set here
-        feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                             county_fips, rdi, congressional_district, time_zone, carrier_route, dpv_footnotes]) #myLicense
+        if len(self.dlg.point_label.text()) == 0:
+            feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+                    county_fips, rdi, cong_dist, time_zone])  
+        else:
+            label = self.dlg.point_label.text() 
+            feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+                    county_fips, rdi, cong_dist, time_zone, label])   
 
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText())
         
+        # Raster layers <'QgsRasterDataProvider' object has no attribute 'addFeature'>
+        # Vector Layers do work
+        # QgsProject instance Im not sure about
         layer_out.dataProvider().addFeature(feature)
         layer_out.renderer().setSymbol(symbol)
+
+        layer_out = self.set_label(layer_out)
+
+
+        # update layer's extent when new features have been added
+        # because change of extent in provider is not propagated to the layer
+        # vl.updateExtents()
         layer_out.updateExtents()
          # TODO: See if you can find an existing layer instead of making your own...
         project.addMapLayer(layer_out)
@@ -324,7 +345,7 @@ class Smarty:
             center_point = xform.transform(point_out)
             self.iface.mapCanvas().setCenter(center_point)
 
-            zoom = 16.7
+            zoom = 18.75
             if zoom is not None:
                 # transform the zoom level to scale
                 scale_value = 591657550.5 / 2 ** (zoom - 1)
@@ -357,7 +378,7 @@ class Smarty:
         if layer_name == "":
             layer_name = "Smarty"
  
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=congressional_district:string&field=time_zone:string&field=carrier_route:string&field=dpv_footnotes:string",
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string",
                 layer_name,
                 "memory") # TODO: can it exist disk
         
@@ -365,6 +386,8 @@ class Smarty:
         auth_token = self.dlg.auth_token.text() # "nD3IIoyZ3H4LSzNp6qpl" #
         
         for index, row in df.iterrows():
+
+            #TODO: After the first iteration add a check for a 401 error --> means they dont have correct credentials
             
             street = row['address']
             city = row['city']
@@ -414,10 +437,8 @@ class Smarty:
             county = first_candidate.metadata.county_name
             county_fips = first_candidate.metadata.county_fips
             rdi = first_candidate.metadata.rdi
-            congressional_district = first_candidate.metadata.congressional_district
+            cong_dist = first_candidate.metadata.congressional_district
             time_zone = first_candidate.metadata.time_zone
-            carrier_route = first_candidate.metadata.carrier_route
-            dpv_footnotes = first_candidate.analysis.dpv_footnotes
 
             point_out = QgsPointXY(longitude, latitude)
             feature = QgsFeature()
@@ -425,23 +446,24 @@ class Smarty:
             
             ###########################################################
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                        county_fips, rdi, congressional_district, time_zone, carrier_route, dpv_footnotes])
-            feature.setAttributes([address, myLicense]) # FIXME:
+                        county_fips, rdi, cong_dist, time_zone])
 
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
-            # symbol = QgsMarkerSymbol.createSimple({'angle': '0', 'cap_style': 'square', 'color': '255,0,0,255', 'horizontal_anchor_point': '1', 'joinstyle': 'bevel', 'name': 'square', 'offset': '0,0', 'offset_map_unit_scale': '3x:0,0,0,0,0,0', 'offset_unit': 'MM', 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'outline_width': '0', 'outline_width_map_unit_scale': '3x:0,0,0,0,0,0', 'outline_width_unit': 'MM', 'scale_method': 'diameter', 'size': '2', 'size_map_unit_scale': '3x:0,0,0,0,0,0', 'size_unit': 'MM', 'vertical_anchor_point': '1'})
             
             layer_out.dataProvider().addFeature(feature)
             layer_out.renderer().setSymbol(symbol)
+            
             layer_out.updateExtents()
-                # TODO: See if you can find an existing layers
         
         project.addMapLayer(layer_out)
 
             # TODO: output a list of the validated and non validated addresses?
 
-    def smarty_web_link(self):
+    def smarty_geo_link(self):
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
+    
+    def smarty_home_link(self):
+        webbrowser.open("https://www.smarty.com/")
 
     def set_symbol(self, color, symbol):
         # TODO: grab all the symbols in a proper manner
@@ -468,7 +490,7 @@ class Smarty:
     
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(627,750)
+            self.dlg.resize(627,712)
             self.dlg.meta_data_results.setVisible(True)
         else:
             self.dlg.resize(627,586)
@@ -476,8 +498,12 @@ class Smarty:
     
     def refresh_layers(self):
         layers = QgsProject.instance().layerTreeRoot().children()
+
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers])
+
+        self.dlg.save_shapefile_drop.clear()
+        self.dlg.save_shapefile_drop.addItems([layer.name() for layer in layers])
     
     def fill_symbols(self):
         # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
@@ -499,6 +525,51 @@ class Smarty:
         
         self.dlg.existing_layer_frame.setVisible(True)
         self.dlg.existing_layer_frame.setDisabled(False)
+    
+    def set_label(self, layer_out):
+        label_settings = QgsPalLayerSettings()
+        # label_settings.drawBackground = True
+        label_settings.displayAll = True
+
+        if len(self.dlg.point_label.text()) == 0:
+            label_settings.fieldName = 'address'
+        else:
+            label_settings.fieldName = 'label'
+
+        text_format = QgsTextFormat()
+        background_color = QgsTextBackgroundSettings()
+        background_color.setFillColor(QColor('white'))
+        background_color.setEnabled(True)
+        text_format.setBackground(background_color )
+        text_format.setSize(19)
+        label_settings.setFormat(text_format)
+
+        layer_out.setLabeling(QgsVectorLayerSimpleLabeling(label_settings))
+        layer_out.setLabelsEnabled(True)
+        layer_out.triggerRepaint()
+
+        return layer_out
+    
+    def save_shapefile(self):
+        layers = QgsProject.instance().layerTreeRoot().children()
+        # myDir = QgsProject.instance().readPath("./")
+        # file_name = 'Smarty' + '.shp'
+        # ShapefileDir = myDir + "/Shapefiles/" + file_name
+
+        selected_layer = self.dlg.save_shapefile_drop.currentIndex()
+        layer = layers[selected_layer].layer()
+
+        # writer = QgsVectorFileWriter.writeAsVectorFormat(layer, "utf-8", driverName="ESRI Shapefile")
+
+        # TODO: Let the user choose this? AND the name of the file
+        # This is currently only saving the lat/long cordinates -- TODO: figure out how to save labeling, etc
+        # The information you wish to store can be saved in a qgis layer definition file (*.qlr) or in a qgis project, rsp.
+        file_path = "/Users/caroline/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/smarty/Smarty.shp"
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = "ESRI Shapefile"
+
+        QgsVectorFileWriter.writeAsVectorFormatV2(layer, file_path, QgsCoordinateTransformContext(), options)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -512,11 +583,13 @@ class Smarty:
             # Listen for clicked buttons
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
-            self.dlg.smarty_link.clicked.connect(self.smarty_web_link)
+            self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
+            self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
             self.dlg.meta_data.clicked.connect(self.meta_resize)
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
+            self.dlg.save_shapefile.clicked.connect(self.save_shapefile)
 
             # Disable sections of dialogue box
             self.dlg.frame.setDisabled(True)
