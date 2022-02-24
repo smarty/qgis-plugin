@@ -30,7 +30,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
                        QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
-                       QgsVectorFileWriter, QgsCoordinateTransformContext)
+                       QgsVectorFileWriter, QgsCoordinateTransformContext, QgsLayerDefinition, QgsLayerTreeLayer)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
@@ -219,7 +219,7 @@ class Smarty:
             lookup.state = self.dlg.state.text() 
             lookup.zipcode = self.dlg.zipcode.text()
             lookup.candidates = 3
-            lookup.match = "invalid"
+            lookup.match = "enhanced"
 
         try:
             client.send_lookup(lookup)
@@ -324,10 +324,6 @@ class Smarty:
 
         layer_out = self.set_label(layer_out)
 
-
-        # update layer's extent when new features have been added
-        # because change of extent in provider is not propagated to the layer
-        # vl.updateExtents()
         layer_out.updateExtents()
          # TODO: See if you can find an existing layer instead of making your own...
         project.addMapLayer(layer_out)
@@ -353,9 +349,15 @@ class Smarty:
 
         ############################################################################################################################  
         
-        self.refresh_layers()                                                  
+        self.refresh_layers()
 
         self.iface.messageBar().pushMessage("Success: ", message, level=Qgis.Success, duration=6)
+
+        layer_out.commitChanges()
+
+        #############################################################################################################################
+                                                            ######### TODO: SAVE TO DISK?
+
 
     def smarty_batch(self):
 
@@ -405,7 +407,7 @@ class Smarty:
             lookup.state = state
             lookup.zipcode = zipcode
             lookup.candidates = 3
-            lookup.match = "invalid" 
+            lookup.match = "enhanced" 
 
             try:
                 client.send_lookup(lookup)
@@ -501,12 +503,14 @@ class Smarty:
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers])
-
-        self.dlg.save_shapefile_drop.clear()
-        self.dlg.save_shapefile_drop.addItems([layer.name() for layer in layers])
     
     def fill_symbols(self):
         # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
+        # print(layer.renderer().symbol().symbolLayers()[0].properties())
+
+        # for cat in renderer.categories():
+        #     print("{}: {} :: {}".format(cat.value(), cat.label(), cat.symbol()))
+
         symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
@@ -552,24 +556,25 @@ class Smarty:
     
     def save_shapefile(self):
         layers = QgsProject.instance().layerTreeRoot().children()
-        # myDir = QgsProject.instance().readPath("./")
-        # file_name = 'Smarty' + '.shp'
-        # ShapefileDir = myDir + "/Shapefiles/" + file_name
 
         selected_layer = self.dlg.save_shapefile_drop.currentIndex()
         layer = layers[selected_layer].layer()
 
-        # writer = QgsVectorFileWriter.writeAsVectorFormat(layer, "utf-8", driverName="ESRI Shapefile")
-
-        # TODO: Let the user choose this? AND the name of the file
-        # This is currently only saving the lat/long cordinates -- TODO: figure out how to save labeling, etc
-        # The information you wish to store can be saved in a qgis layer definition file (*.qlr) or in a qgis project, rsp.
-        file_path = "/Users/caroline/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/smarty/Smarty.shp"
+        if len(self.dlg.shapefile_name.text()) == 0:
+            self.iface.messageBar().pushMessage("Please fill in shapefile name. ", "", level=Qgis.Critical, duration=6)
+        
+        file_path = self.dlg.shapefile.filePath() + "/" + self.dlg.shapefile_name.text()
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.driverName = "ESRI Shapefile"
 
         QgsVectorFileWriter.writeAsVectorFormatV2(layer, file_path, QgsCoordinateTransformContext(), options)
+
+    def populate_shapefile(self):
+        layers = QgsProject.instance().layerTreeRoot().children()
+
+        self.dlg.save_shapefile_drop.clear()
+        self.dlg.save_shapefile_drop.addItems([layer.name() for layer in layers])
 
     def run(self):
         """Run method that performs all the real work"""
@@ -599,6 +604,7 @@ class Smarty:
             # Fill drop downs
             self.refresh_layers()
             self.fill_symbols()
+            self.populate_shapefile()
 
             # Set correct visibility
             self.dlg.extendable.setVisible(False) # FIXME: am I using this?
