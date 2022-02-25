@@ -42,6 +42,7 @@ from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteP
 from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
+from .utils import Utils as check
 import os.path
 import sys
 import pandas as pd
@@ -230,6 +231,10 @@ class Smarty:
             return
 
         result = lookup.result
+        summary = self.handle_success(result)
+        # This is where we need to do the checks to verify the results/address
+        # self.iface.messageBar().pushMessage("Result: ", summary, level=Qgis.Success, duration=6)
+
 
         # It is hitting here when we give it a bogus address - so our result isnt even getting set...
         if not result:
@@ -283,8 +288,9 @@ class Smarty:
         county_fips = first_candidate.metadata.county_fips
         rdi = first_candidate.metadata.rdi
         cong_dist = first_candidate.metadata.congressional_district
-        time_zone = first_candidate.metadata.time_zone
-        dst = first_candidate.metadata.obeys_dst 
+        dst = first_candidate.metadata.obeys_dst
+
+
 
         self.dlg.resize(627,586)
         self.dlg.results.setVisible(True)
@@ -303,9 +309,10 @@ class Smarty:
         self.dlg.county_name_result.setText(county)
         self.dlg.county_fips_result.setText(county_fips)
         self.dlg.rdi_result.setText(rdi)
+        self.dlg.summary_result.setText(summary)  # TODO: We need to set the results of the thing here.
         self.dlg.congressional_district_result.setText(cong_dist)
-        self.dlg.time_zone_result.setText(time_zone)
         self.dlg.dst_result.setText(str(dst))
+        self.dlg.time_zone_result.setText(time_zone)
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
@@ -362,6 +369,17 @@ class Smarty:
 
         #############################################################################################################################
                                                             ######### TODO: SAVE TO DISK?
+    def handle_success(self, result):
+        if check.is_valid(result):
+            return "Valid address"
+        elif check.is_invalid(result):
+            return "Not a valid address" # TODO: Change this to check for the type that is being returned. Then we can set the values.
+        elif check.is_ambiguous(result):
+            return "An ambiguous address"
+        elif check.is_missing_secondary(result):
+            return "Missing secondary address"
+        else:
+            return "ERROR: Something went horribly wrong"
 
 
     def smarty_batch(self):
@@ -499,7 +517,7 @@ class Smarty:
     
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(627,712)
+            self.dlg.resize(627,760)
             self.dlg.meta_data_results.setVisible(True)
         else:
             self.dlg.resize(627,586)
