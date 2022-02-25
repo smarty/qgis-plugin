@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery
 from qgis.PyQt.QtGui import QIcon, QColor
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit, QGridLayout
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
@@ -33,8 +33,9 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsVectorFileWriter, QgsCoordinateTransformContext, QgsLayerDefinition, QgsLayerTreeLayer)
 
 #########
-from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
+from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
+from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
 #########
 
 # Initialize Qt resources from file resources.py
@@ -42,6 +43,7 @@ from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
 import os.path
+import sys
 import pandas as pd
 import webbrowser
 
@@ -210,6 +212,7 @@ class Smarty:
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
 
         lookup = StreetLookup()
+        lookup.match = "enhanced" 
         
         if len(self.dlg.single_address_lookup.text()) > 0:
             lookup.street = self.dlg.single_address_lookup.text()
@@ -219,7 +222,6 @@ class Smarty:
             lookup.state = self.dlg.state.text() 
             lookup.zipcode = self.dlg.zipcode.text()
             lookup.candidates = 3
-            lookup.match = "enhanced"
 
         try:
             client.send_lookup(lookup)
@@ -252,11 +254,11 @@ class Smarty:
                 layer_name = "Smarty"
             
             if len(self.dlg.point_label.text()) == 0:
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string",
                 layer_name,
                 "memory") # TODO: can it exist disk
             else:
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=label:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 layer_name,
                 "memory") # TODO: can it exist disk
         else:
@@ -268,6 +270,7 @@ class Smarty:
 
         # Set the attributes for the feild
         # TODO: Put this in a function so it is not repeated
+        # TODO: an error is getting thrown on the following line:
         address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
         longitude = first_candidate.metadata.longitude
         latitude = first_candidate.metadata.latitude
@@ -281,6 +284,7 @@ class Smarty:
         rdi = first_candidate.metadata.rdi
         cong_dist = first_candidate.metadata.congressional_district
         time_zone = first_candidate.metadata.time_zone
+        dst = first_candidate.metadata.obeys_dst 
 
         self.dlg.resize(627,586)
         self.dlg.results.setVisible(True)
@@ -301,6 +305,7 @@ class Smarty:
         self.dlg.rdi_result.setText(rdi)
         self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
+        self.dlg.dst_result.setText(str(dst))
 
         point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
@@ -308,11 +313,11 @@ class Smarty:
 
         if len(self.dlg.point_label.text()) == 0:
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                    county_fips, rdi, cong_dist, time_zone])  
+                    county_fips, rdi, cong_dist, time_zone, dst])  
         else:
             label = self.dlg.point_label.text() 
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                    county_fips, rdi, cong_dist, time_zone, label])   
+                    county_fips, rdi, cong_dist, time_zone, dst, label])   
 
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText())
         
@@ -380,7 +385,7 @@ class Smarty:
         if layer_name == "":
             layer_name = "Smarty"
  
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string",
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string",
                 layer_name,
                 "memory") # TODO: can it exist disk
         
@@ -428,6 +433,7 @@ class Smarty:
             longitude = first_candidate.metadata.longitude
             latitude = first_candidate.metadata.latitude
 
+            # TODO: an error is being thrown on this line:
             address = first_candidate.components.primary_number + " " + first_candidate.components.street_predirection + " " + first_candidate.components.street_name + " " + first_candidate.components.street_postdirection
             longitude = first_candidate.metadata.longitude
             latitude = first_candidate.metadata.latitude
@@ -441,6 +447,7 @@ class Smarty:
             rdi = first_candidate.metadata.rdi
             cong_dist = first_candidate.metadata.congressional_district
             time_zone = first_candidate.metadata.time_zone
+            dst = first_candidate.meta_data.dst
 
             point_out = QgsPointXY(longitude, latitude)
             feature = QgsFeature()
@@ -448,7 +455,7 @@ class Smarty:
             
             ###########################################################
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                        county_fips, rdi, cong_dist, time_zone])
+                        county_fips, rdi, cong_dist, time_zone, dst])
 
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
             
@@ -462,10 +469,10 @@ class Smarty:
             # TODO: output a list of the validated and non validated addresses?
 
     def smarty_geo_link(self):
-        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
+        webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
     
     def smarty_home_link(self):
-        webbrowser.open("https://www.smarty.com/")
+        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
 
     def set_symbol(self, color, symbol):
         # TODO: grab all the symbols in a proper manner
@@ -511,7 +518,7 @@ class Smarty:
         # for cat in renderer.categories():
         #     print("{}: {} :: {}".format(cat.value(), cat.label(), cat.symbol()))
 
-        symbols = ['circle', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'star', 'regular_star', 'arrow', 'filled_arrowhead', 'x']
+        symbols = ['star', 'regular_star', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'circle', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
         self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
@@ -554,27 +561,57 @@ class Smarty:
 
         return layer_out
     
-    def save_shapefile(self):
-        layers = QgsProject.instance().layerTreeRoot().children()
+    def autocomplete(self):
+        text = "THE TEXT CHANGED: " + self.dlg.autocomplete.text()
 
-        selected_layer = self.dlg.save_shapefile_drop.currentIndex()
-        layer = layers[selected_layer].layer()
+        ########################################################################## THIS IS WITH OUT FILTERING
+        key = "90464575666784311"
+        hostname = "qgis"
 
-        if len(self.dlg.shapefile_name.text()) == 0:
-            self.iface.messageBar().pushMessage("Please fill in shapefile name. ", "", level=Qgis.Critical, duration=6)
+        credentials = SharedCredentials(key, hostname)
+
+        client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
         
-        file_path = self.dlg.shapefile.filePath() + "/" + self.dlg.shapefile_name.text()
+        lookup = AutocompleteProLookup(text)
+        
+        client.send(lookup) 
 
-        options = QgsVectorFileWriter.SaveVectorOptions()
-        options.driverName = "ESRI Shapefile"
+        suggestion_list = []
+        for suggestion in lookup.result:
+            suggestion_list.appen(suggestion)
+        
+        # Lol this is not working - well it is, but it is not what we want
+        # self.dlg.autocomplete.setGeometry(200, 175, 150, 35)
 
-        QgsVectorFileWriter.writeAsVectorFormatV2(layer, file_path, QgsCoordinateTransformContext(), options)
+        completer = QCompleter(suggestion_list)
+        self.dlg.autocomplete.setCompleter(completer)
 
-    def populate_shapefile(self):
-        layers = QgsProject.instance().layerTreeRoot().children()
+        # TODO: We need to figure out how to show the drop down options
+        # self.show()
 
-        self.dlg.save_shapefile_drop.clear()
-        self.dlg.save_shapefile_drop.addItems([layer.name() for layer in layers])
+        ########################################################################## THIS IS WITH FILTERING (LIKE OREM, PROVO, ETC.)
+        # Documentation for input fields can be found at:
+        # https://smartystreets.com/docs/us-autocomplete-api#http-request-input-fields
+
+        # lookup.add_state_filter('CO')
+        # lookup.add_state_filter('UT')
+        # lookup.add_city_filter('Denver')
+        # lookup.add_city_filter('Orem')
+        # lookup.add_state_preference('CO')
+        # lookup.add_state_preference('UT')
+        # lookup.add_city_preference('Denver')
+        # lookup.selected = '1042 W Center St Apt A (24) Orem UT 84057'
+        # lookup.max_results = 5
+        # lookup.prefer_geo = geolocation_type.NONE
+        # lookup.prefer_ratio = 33
+        # lookup.source = 'all'
+
+        # suggestions = client.send(lookup)  # The client will also return the suggestions directly
+
+        # print()
+        # print('*** Result with some filters ***')
+        # for suggestion in suggestions:
+        #     print suggestion.street_line, suggestion.city, ",", suggestion.state
 
     def run(self):
         """Run method that performs all the real work"""
@@ -594,7 +631,6 @@ class Smarty:
             self.dlg.meta_data.clicked.connect(self.meta_resize)
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
-            self.dlg.save_shapefile.clicked.connect(self.save_shapefile)
 
             # Disable sections of dialogue box
             self.dlg.frame.setDisabled(True)
@@ -604,13 +640,15 @@ class Smarty:
             # Fill drop downs
             self.refresh_layers()
             self.fill_symbols()
-            self.populate_shapefile()
 
             # Set correct visibility
             self.dlg.extendable.setVisible(False) # FIXME: am I using this?
             self.dlg.meta_data_results.setVisible(False)
             self.dlg.results.setVisible(False)
             self.dlg.stacked_widget.setVisible(False)
+
+            # Autocompleter listener
+            self.dlg.autocomplete.textChanged.connect(self.autocomplete)
 
 
         # show the dialog

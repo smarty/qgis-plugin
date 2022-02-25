@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>610</width>
-    <height>384</height>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -105,7 +105,7 @@
         </rect>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
@@ -620,7 +620,7 @@
         <property name="geometry">
          <rect>
           <x>340</x>
-          <y>70</y>
+          <y>40</y>
           <width>60</width>
           <height>16</height>
          </rect>
@@ -676,26 +676,6 @@
          <string>Congressional District:</string>
         </property>
        </widget>
-       <widget class="QLabel" name="label_34">
-        <property name="geometry">
-         <rect>
-          <x>340</x>
-          <y>40</y>
-          <width>71</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>14</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>CMRA:</string>
-        </property>
-       </widget>
        <widget class="QLabel" name="county_name_result">
         <property name="geometry">
          <rect>
@@ -722,7 +702,7 @@
          <string/>
         </property>
        </widget>
-       <widget class="QLabel" name="rdi_result">
+       <widget class="QLabel" name="dst_result">
         <property name="geometry">
          <rect>
           <x>450</x>
@@ -761,24 +741,11 @@
          <string/>
         </property>
        </widget>
-       <widget class="QLabel" name="carrier_route_result">
+       <widget class="QLabel" name="rdi_result">
         <property name="geometry">
          <rect>
           <x>450</x>
           <y>40</y>
-          <width>91</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-       <widget class="QLabel" name="dpv_footnotes_result">
-        <property name="geometry">
-         <rect>
-          <x>450</x>
-          <y>70</y>
           <width>91</width>
           <height>20</height>
          </rect>
@@ -798,6 +765,26 @@
         </property>
         <property name="text">
          <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_31">
+        <property name="geometry">
+         <rect>
+          <x>340</x>
+          <y>70</y>
+          <width>60</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>DST:</string>
         </property>
        </widget>
       </widget>
@@ -1005,76 +992,27 @@
         <string>Visit Smarty</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="save_shapefile">
+      <widget class="QLineEdit" name="autocomplete">
        <property name="geometry">
         <rect>
-         <x>460</x>
-         <y>220</y>
-         <width>111</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Save Shapefile</string>
-       </property>
-      </widget>
-      <widget class="QgsFeatureListComboBox" name="mFeatureListComboBox">
-       <property name="geometry">
-        <rect>
-         <x>440</x>
-         <y>-10</y>
-         <width>99</width>
-         <height>32</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QgsFileWidget" name="shapefile">
-       <property name="geometry">
-        <rect>
-         <x>300</x>
-         <y>220</y>
-         <width>151</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="storageMode">
-        <enum>QgsFileWidget::GetDirectory</enum>
-       </property>
-       <property name="options">
-        <set>QFileDialog::ShowDirsOnly</set>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="shapefile_name">
-       <property name="geometry">
-        <rect>
-         <x>300</x>
-         <y>190</y>
-         <width>151</width>
-         <height>21</height>
+         <x>370</x>
+         <y>180</y>
+         <width>181</width>
+         <height>16</height>
         </rect>
        </property>
       </widget>
       <widget class="QLabel" name="label_14">
        <property name="geometry">
         <rect>
-         <x>470</x>
-         <y>190</y>
-         <width>111</width>
+         <x>370</x>
+         <y>150</y>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>Shapefile Name</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="save_shapefile_drop">
-       <property name="geometry">
-        <rect>
-         <x>420</x>
-         <y>160</y>
-         <width>161</width>
-         <height>21</height>
-        </rect>
+        <string>Autocomplete:</string>
        </property>
       </widget>
      </widget>
@@ -1321,11 +1259,6 @@
    <class>QgsColorButton</class>
    <extends>QToolButton</extends>
    <header>qgscolorbutton.h</header>
-  </customwidget>
-  <customwidget>
-   <class>QgsFeatureListComboBox</class>
-   <extends>QComboBox</extends>
-   <header>qgsfeaturelistcombobox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
