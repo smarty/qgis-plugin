@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>618</width>
-    <height>388</height>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -929,7 +929,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="page">
          <widget class="QFrame" name="new_layer_frame">
@@ -1191,7 +1191,7 @@
            <rect>
             <x>190</x>
             <y>0</y>
-            <width>171</width>
+            <width>181</width>
             <height>31</height>
            </rect>
           </property>
@@ -1318,8 +1318,8 @@
          <widget class="QLabel" name="label_9">
           <property name="geometry">
            <rect>
-            <x>40</x>
-            <y>40</y>
+            <x>20</x>
+            <y>10</y>
             <width>101</width>
             <height>16</height>
            </rect>
@@ -1337,9 +1337,9 @@
          <widget class="QComboBox" name="symbol_drop_down">
           <property name="geometry">
            <rect>
-            <x>160</x>
-            <y>40</y>
-            <width>171</width>
+            <x>130</x>
+            <y>10</y>
+            <width>141</width>
             <height>21</height>
            </rect>
           </property>
@@ -1347,8 +1347,8 @@
          <widget class="QLabel" name="label_5">
           <property name="geometry">
            <rect>
-            <x>40</x>
-            <y>90</y>
+            <x>20</x>
+            <y>70</y>
             <width>101</width>
             <height>16</height>
            </rect>
@@ -1366,9 +1366,9 @@
          <widget class="QLineEdit" name="layer_name">
           <property name="geometry">
            <rect>
-            <x>170</x>
-            <y>90</y>
-            <width>161</width>
+            <x>140</x>
+            <y>70</y>
+            <width>131</width>
             <height>21</height>
            </rect>
           </property>
@@ -1376,8 +1376,8 @@
          <widget class="QLabel" name="label_10">
           <property name="geometry">
            <rect>
-            <x>40</x>
-            <y>140</y>
+            <x>290</x>
+            <y>10</y>
             <width>91</width>
             <height>16</height>
            </rect>
@@ -1395,9 +1395,9 @@
          <widget class="QgsColorButton" name="symbol_color">
           <property name="geometry">
            <rect>
-            <x>170</x>
-            <y>140</y>
-            <width>111</width>
+            <x>400</x>
+            <y>10</y>
+            <width>141</width>
             <height>21</height>
            </rect>
           </property>
@@ -1405,8 +1405,8 @@
          <widget class="QLabel" name="label_32">
           <property name="geometry">
            <rect>
-            <x>40</x>
-            <y>190</y>
+            <x>290</x>
+            <y>70</y>
             <width>81</width>
             <height>16</height>
            </rect>
@@ -1415,12 +1415,12 @@
            <string>Point Label:</string>
           </property>
          </widget>
-         <widget class="QComboBox" name="symbol_drop_down_2">
+         <widget class="QComboBox" name="batch_point_label">
           <property name="geometry">
            <rect>
-            <x>160</x>
-            <y>190</y>
-            <width>171</width>
+            <x>390</x>
+            <y>70</y>
+            <width>151</width>
             <height>21</height>
            </rect>
           </property>

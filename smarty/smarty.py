@@ -21,10 +21,10 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit, QGridLayout
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
@@ -320,7 +320,7 @@ class Smarty:
         layer_out.dataProvider().addFeature(feature)
         layer_out.renderer().setSymbol(symbol)
 
-        layer_out = self.set_label(layer_out)
+        layer_out = self.set_label_single(layer_out)
 
         layer_out.updateExtents()
 
@@ -371,7 +371,7 @@ class Smarty:
         if layer_name == "":
             layer_name = "Smarty"
  
-        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string",
+        layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 layer_name,
                 "memory") # TODO: can it exist disk
 
@@ -392,14 +392,12 @@ class Smarty:
         for i, row in add_df.iterrows():
 
             #TODO: After the first iteration add a check for a 401 error --> means they dont have correct credentials
-            full_address = row[address] + " " + row[city] + " " + row[state] + " " + str(row[zip])
-           
-            # street = row['address']
-            # city = row['city']
-            # state = row['state']
-            # zipcode = str(row['zip'])
 
-            batch.add(StreetLookup(full_address))
+            batch.add(StreetLookup())
+            batch[i].street = row['address']
+            batch[i].city = row['city']
+            batch[i].state = row['state']
+            batch[i].zipcode = str(row['zip']) # TODO: MAYBE MAKE A CHECK TO SEE IF THE COLUMN IS NUMERIC? DOES THIS EVEN MATTER?
             batch[i].match = 'enhanced'
 
         try:
@@ -408,51 +406,60 @@ class Smarty:
             self.iface.messageBar().pushMessage("FAIL: ", "LOOK UP FAILED", level=Qgis.Critical, duration=6)
             return
 
-        # if not result:
-        #     self.iface.messageBar().pushMessage("NO MATCH: ", "NO RESULTS RETURNED", level=Qgis.Critical, duration=6)
-        #     continue # return
-        #     # FIXME: you need to think about appending a list of addresses that invalid addresses
-
         ##################################################################################################################################
                             ######################## ITERATE OVER RESULTS
         for i, lookup in enumerate(batch):
 
             candidates = lookup.result
 
-            for candidate in candidates:
+            if len(candidates) == 0:
+                self.iface.messageBar().pushMessage("NO MATCH FOR #: ", str(i), level=Qgis.Critical, duration=6) # TODO: MAKE A LIST OF NON VALIDATED ADDRESSES?
+                continue
 
-                longitude = candidate.metadata.longitude
-                latitude = candidate.metadata.latitude
+            candidates = lookup.result
+            candidate = candidates[0]
 
-                address = self.set_address(candidate)
-                longitude = candidate.metadata.longitude
-                latitude = candidate.metadata.latitude
-                city = candidate.components.city_name
-                state = candidate.components.state_abbreviation
-                zip_code = candidate.components.zipcode
-                zip_4 = candidate.components.plus4_code
-                precision = candidate.metadata.precision
-                county = candidate.metadata.county_name
-                county_fips = candidate.metadata.county_fips
-                rdi = candidate.metadata.rdi
-                cong_dist = candidate.metadata.congressional_district
-                time_zone = candidate.metadata.time_zone
-                dst = candidate.metadata.obeys_dst
+            longitude = candidate.metadata.longitude
+            latitude = candidate.metadata.latitude
+            address = self.set_address(candidate)
+            longitude = candidate.metadata.longitude
+            latitude = candidate.metadata.latitude
 
-                point_out = QgsPointXY(longitude, latitude)
-                feature = QgsFeature()
-                feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+            city = candidate.components.city_name
+            state = candidate.components.state_abbreviation
+            zip_code = candidate.components.zipcode
+            zip_4 = candidate.components.plus4_code
+
+            precision = candidate.metadata.precision
+            county = candidate.metadata.county_name
+            county_fips = candidate.metadata.county_fips
+            rdi = candidate.metadata.rdi
+            cong_dist = candidate.metadata.congressional_district
+            time_zone = candidate.metadata.time_zone
+            dst = candidate.metadata.obeys_dst
+
+            point_out = QgsPointXY(longitude, latitude)
+            feature = QgsFeature()
+            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+        
+        ###########################################################
+
+            if self.dlg.batch_point_label.currentIndex == -1:
+                label = address
+            else:
+                label = df.at[i,self.dlg.batch_point_label.currentText()]
+                
+            feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+                        county_fips, rdi, cong_dist, time_zone, dst, label])
+
+            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
             
-            ###########################################################
-                feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                            county_fips, rdi, cong_dist, time_zone, dst])
-
-                symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
-                
-                layer_out.dataProvider().addFeature(feature)
-                layer_out.renderer().setSymbol(symbol)
-                
-                layer_out.updateExtents()
+            layer_out.dataProvider().addFeature(feature)
+            layer_out.renderer().setSymbol(symbol)
+            
+            layer_out = self.set_label_batch(layer_out)
+            
+            layer_out.updateExtents()
         
         project.addMapLayer(layer_out)
 
@@ -508,7 +515,7 @@ class Smarty:
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
     
     def fill_symbols(self):
-        # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
+        # TODO: gather all the output options
 
         # for cat in renderer.categories(): ############# RENDERER NOT DEFINED
         #     # print("{}: {} :: {}".format(cat.value(), cat.label(), cat.symbol()))
@@ -532,7 +539,7 @@ class Smarty:
         self.dlg.existing_layer_frame.setVisible(True)
         self.dlg.existing_layer_frame.setDisabled(False)
     
-    def set_label(self, layer_out):
+    def set_label_single(self, layer_out):
         label_settings = QgsPalLayerSettings()
 
         label_settings.displayAll = True
@@ -555,9 +562,36 @@ class Smarty:
         layer_out.triggerRepaint()
 
         return layer_out
+
+    def set_label_batch(self, layer_out):
+        label_settings = QgsPalLayerSettings()
+
+        label_settings.displayAll = True
+
+        if self.dlg.batch_point_label.currentIndex == -1:
+            label_settings.fieldName = 'address'
+        else:
+            label_settings.fieldName = 'label'
+
+        text_format = QgsTextFormat()
+        background_color = QgsTextBackgroundSettings()
+        background_color.setFillColor(QColor('white'))
+        background_color.setEnabled(True)
+        text_format.setBackground(background_color )
+        text_format.setSize(19)
+        label_settings.setFormat(text_format)
+
+        layer_out.setLabeling(QgsVectorLayerSimpleLabeling(label_settings))
+        layer_out.setLabelsEnabled(True)
+        layer_out.triggerRepaint()
+
+        return layer_out
     
     def autocomplete(self):
         text = self.dlg.autocomplete.text()
+
+        if text[-1] == ' ':
+            return
         
         if len(text) > 0 :
 
@@ -574,11 +608,14 @@ class Smarty:
 
             suggestion_list = []
             for suggestion in lookup.result:
+                if len(suggestion_list) == 5:
+                    break
                 address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
                 suggestion_list.append(address)
 
             # Set completer object and connect it to the lineEdit
             completer = QCompleter(suggestion_list, caseSensitivity=QtCore.Qt.CaseInsensitive)
+            
             self.dlg.autocomplete.setCompleter(completer)
 
             self.dlg.autocomplete.show()
@@ -613,6 +650,10 @@ class Smarty:
         self.dlg.batch_city.addItems(field for field in fields)
         self.dlg.batch_state.addItems(field for field in fields)
         self.dlg.batch_zip.addItems(field for field in fields)
+        self.dlg.batch_point_label.addItems(field for field in fields)
+
+    def on_activated(self):
+        QTimer.singleShot(0, self.consoleCommandLineEdit.clear)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -650,7 +691,7 @@ class Smarty:
 
             # Autocompleter listener
             self.dlg.autocomplete.textChanged.connect(self.autocomplete)
-            # self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
+         
 
             # Resize Dialog box for batch lookups
             self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
