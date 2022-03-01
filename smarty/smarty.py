@@ -42,6 +42,7 @@ from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteP
 from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
+from .utils import Utils
 import os.path
 import sys
 import pandas as pd
@@ -232,7 +233,9 @@ class Smarty:
 
         result = lookup.result
 
-        if not result:
+        success = self.handle_success(result)
+
+        if success == "invalid_address":
             self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
             return
 
@@ -298,6 +301,7 @@ class Smarty:
         self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
         self.dlg.dst_result.setText(str(dst))
+        self.dlg.success_result.setText(success)
 
         ############################################################################################################################
 
@@ -350,6 +354,16 @@ class Smarty:
         self.refresh_layers()
 
         layer_out.commitChanges()
+    def handle_success(self, result):
+        if Utils.is_valid(result):
+            return "valid_address"
+        if Utils.is_invalid(result):
+            return "invalid_address"
+        if Utils.is_missing_secondary(result):
+            return "missing_secondary"
+        if Utils.is_ambiguous(result):
+            return "ambiguous_address"
+        return "MAJOR ERROR"
 
 
     def smarty_batch(self):
@@ -487,7 +501,7 @@ class Smarty:
     
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(627,712)
+            self.dlg.resize(627,767)
             self.dlg.meta_data_results.setVisible(True)
         else:
             self.dlg.resize(627,586)
@@ -600,7 +614,7 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(627,519)
+            self.dlg.resize(627,510)
         else:
             self.dlg.resize(627,390)
     
