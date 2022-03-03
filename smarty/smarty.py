@@ -21,16 +21,16 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QCompleter
 # from qgis.core import QgsProject, Qgis
-from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
-                       QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
-                       QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
+from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject,
+                       QgsPointXY, QgsGeometry, QgsVectorLayer,
+                       QgsFeature, QgsMarkerSymbol, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
-                       QgsVectorFileWriter, QgsCoordinateTransformContext, QgsLayerDefinition, QgsLayerTreeLayer, QgsMapLayer)
+                       QgsSettings, QgsMapLayer)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
@@ -42,7 +42,6 @@ from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteP
 from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
-from .utils import Utils
 import os.path
 import sys
 import pandas as pd
@@ -77,6 +76,10 @@ class Smarty:
             self.plugin_dir,
             'i18n',
             'Smarty_{}.qm'.format(locale))
+        
+        self.settings = QSettings()
+        self.settings.setValue('auth_id', "")
+        self.settings.setValue('auth_token', "")
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -233,9 +236,7 @@ class Smarty:
 
         result = lookup.result
 
-        success = self.handle_success(result)
-
-        if success == "invalid_address":
+        if not result:
             self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
             return
 
@@ -257,15 +258,20 @@ class Smarty:
             "memory") 
         else:
             ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
+            layers = self.refresh_layers()
+            selected_layer = layers[self.dlg.layer_box.currentIndex()]
+
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             "Smarty",
             "memory") 
+
+            if selected_layer.attributeList != layer_out:
+                self.iface.messageBar().pushMessage("CANNOT USE LAYER: ", "Pick a previous vector layer with the correct attributes or create a new layer", level=Qgis.Critical, duration=6)
         
         ############################################################################################################################
 
                                                             ######### SET RESULTS ON GUI
         
-        # TODO: Put this in a function so it is not repeated -- do I really need to set it = to a variable? Address maybe, but the other ones not so much
         address = self.set_address(candidate)
         longitude = candidate.metadata.longitude
         latitude = candidate.metadata.latitude
@@ -301,7 +307,6 @@ class Smarty:
         self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
         self.dlg.dst_result.setText(str(dst))
-        self.dlg.success_result.setText(success)
 
         ############################################################################################################################
 
@@ -354,16 +359,6 @@ class Smarty:
         self.refresh_layers()
 
         layer_out.commitChanges()
-    def handle_success(self, result):
-        if Utils.is_valid(result):
-            return "valid_address"
-        if Utils.is_invalid(result):
-            return "invalid_address"
-        if Utils.is_missing_secondary(result):
-            return "missing_secondary"
-        if Utils.is_ambiguous(result):
-            return "ambiguous_address"
-        return "MAJOR ERROR"
 
 
     def smarty_batch(self):
@@ -387,7 +382,7 @@ class Smarty:
  
         layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 layer_name,
-                "memory") # TODO: can it exist disk
+                "memory") 
 
         ##############################################################################################################################
                         ######################### START SMARTY PROCESSING
@@ -405,29 +400,30 @@ class Smarty:
         
         for i, row in add_df.iterrows():
 
-            #TODO: After the first iteration add a check for a 401 error --> means they dont have correct credentials
-
             batch.add(StreetLookup())
-            batch[i].street = row['address']
-            batch[i].city = row['city']
-            batch[i].state = row['state']
-            batch[i].zipcode = str(row['zip']) # TODO: MAYBE MAKE A CHECK TO SEE IF THE COLUMN IS NUMERIC? DOES THIS EVEN MATTER?
+            batch[i].street = row[address]
+            batch[i].city = row[city]
+            batch[i].state = row[state]
+            batch[i].zipcode = str(row[zip]) # TODO: MAYBE MAKE A CHECK TO SEE IF THE COLUMN IS NUMERIC? DOES THIS EVEN MATTER?
             batch[i].match = 'enhanced'
 
         try:
             client.send_batch(batch)
-        except exceptions.SmartyException as err:
-            self.iface.messageBar().pushMessage("FAIL: ", "LOOK UP FAILED", level=Qgis.Critical, duration=6)
+        except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
+            message = str(err)
+            self.iface.messageBar().pushMessage("Error: ", message, level=Qgis.Critical, duration=6)
             return
 
         ##################################################################################################################################
                             ######################## ITERATE OVER RESULTS
+        unvalidated = []
         for i, lookup in enumerate(batch):
 
             candidates = lookup.result
 
             if len(candidates) == 0:
-                self.iface.messageBar().pushMessage("NO MATCH FOR #: ", str(i), level=Qgis.Critical, duration=6) # TODO: MAKE A LIST OF NON VALIDATED ADDRESSES?
+                self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
+                unvalidated.append(lookup) # TODO: What should I do with these addresses?
                 continue
 
             candidates = lookup.result
@@ -491,6 +487,10 @@ class Smarty:
         return symbol
     
     def enable_box(self):
+        if self.settings.value("auth_id") == "":
+            self.settings.setValue("auth_id", self.dlg.auth_id.text())
+            self.settings.setValue("auth_token", self.dlg.auth_token.text())
+        
         auth_id_len = len(self.dlg.auth_id.text())
         auth_token_len = len(self.dlg.auth_token.text())
         
@@ -505,10 +505,10 @@ class Smarty:
             return
         
         self.dlg.frame.setEnabled(True)
-    
+
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(627,767)
+            self.dlg.resize(627,712)
             self.dlg.meta_data_results.setVisible(True)
         else:
             self.dlg.resize(627,586)
@@ -527,6 +527,8 @@ class Smarty:
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
+
+        return layers_list
     
     def fill_symbols(self):
         # TODO: gather all the output options
@@ -651,7 +653,7 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(627,510)
+            self.dlg.resize(627,519)
         else:
             self.dlg.resize(627,390)
     
@@ -683,13 +685,18 @@ class Smarty:
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
-            self.dlg.add_tokens.clicked.connect(self.enable_box)
             self.dlg.meta_data.clicked.connect(self.meta_resize)
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
 
-            #TODO: DISABLE BUTTON UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
+            #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
             self.dlg.add_csv.clicked.connect(self.add_csv)
+
+            # Add authentication information
+            if self.settings.value('auth_id') == "":
+                ############################## THIS IS GETTING HIT EVERYTIME WE OPEN THE PLUGIN... SO WE NEED TO THINK ABOUT HOW TO STORE IT ACROSS SESSIONS... MAYBE NOT IN THIS FILE...
+                self.iface.messageBar().pushMessage("NILL AUTH_ID IN SETTINGS: ", "auth_id is nil", level=Qgis.Critical, duration=6)
+            self.dlg.add_tokens.clicked.connect(self.enable_box)
 
             # Disable sections of dialogue box
             self.dlg.frame.setDisabled(True)
