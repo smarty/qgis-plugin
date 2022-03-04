@@ -21,8 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer
-from qgis.PyQt.QtGui import QIcon, QColor
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer, QSettings, QStringListModel
+from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
 # from qgis.core import QgsProject, Qgis
@@ -30,7 +30,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
                        QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
-                       QgsVectorFileWriter, QgsCoordinateTransformContext, QgsLayerDefinition, QgsLayerTreeLayer, QgsMapLayer)
+                        QgsMapLayer)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
@@ -67,6 +67,9 @@ class Smarty:
             application at run time.
         :type iface: QgsInterface
         """
+        # I added this... 
+
+        self.completer = QCompleter(caseSensitivity=QtCore.Qt.CaseInsensitive)
         # Save reference to the QGIS interface
         self.iface = iface
         # initialize plugin directory
@@ -476,7 +479,7 @@ class Smarty:
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
                         county_fips, rdi, cong_dist, time_zone, dst, label])
 
-            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText())
+            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size.text())
             
             layer_out.dataProvider().addFeature(feature)
             layer_out.renderer().setSymbol(symbol)
@@ -495,19 +498,19 @@ class Smarty:
     def smarty_home_link(self):
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
 
-    def set_symbol(self, color, symbol):
-        symbol = QgsMarkerSymbol.createSimple({'name': symbol, 'color': color, 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'8'})
+    def set_symbol(self, color):
+        symbol = QgsMarkerSymbol.createSimple({'name': symbol, 'color': color, 'outline_color': '35,35,35,255', 'outline_style': 'solid', 'size':'10'})
 
         return symbol
     
     def enable_box(self):
-        if self.settings.value("auth_id") == "":
-            self.settings.setValue("auth_id", self.dlg.auth_id.text())
-            self.settings.setValue("auth_token", self.dlg.auth_token.text())
-        
+        #TODO: FIGURE OUT SAVED VALUES OVER SESSIONS
+        # if self.settings.value("auth_id") == "":
+        #     self.settings.setValue("auth_id", self.dlg.auth_id.text())
+        #     self.settings.setValue("auth_token", self.dlg.auth_token.text())
+
         auth_id_len = len(self.dlg.auth_id.text())
         auth_token_len = len(self.dlg.auth_token.text())
-        
         if auth_id_len == 0 and auth_token_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID and an Auth Token", level=Qgis.Critical, duration=6)
             return
@@ -516,6 +519,19 @@ class Smarty:
             return
         elif auth_token_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth Token", level=Qgis.Critical, duration=6)
+            return
+        
+        # TODO: send an API request here! 
+        credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text()) ######## This takes soooo long
+        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+        lookup = StreetLookup()
+        lookup.street = ""
+
+        try:
+            client.send_lookup(lookup)
+        except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
+            message = str(err)
+            self.iface.messageBar().pushMessage("Error: ", message, level=Qgis.Critical, duration=6)
             return
         
         self.dlg.frame.setEnabled(True)
@@ -606,7 +622,7 @@ class Smarty:
         background_color.setFillColor(QColor('white'))
         background_color.setEnabled(True)
         text_format.setBackground(background_color )
-        text_format.setSize(19)
+        text_format.setSize(10)
         label_settings.setFormat(text_format)
 
         layer_out.setLabeling(QgsVectorLayerSimpleLabeling(label_settings))
@@ -618,8 +634,13 @@ class Smarty:
     def autocomplete(self):
         text = self.dlg.autocomplete.text()
 
-        if text[-1] == ' ':
-            return
+        # It keeps hitting the API and returning info, but it does something weird how
+        # if you keep typing it returns matches
+        # if I type out east nothing comes up... 
+        # if I type 'E' then it also returns information
+        # I wonder if QCompleter is doing something interesting and filtering the information
+        # Before I can even get there... 
+        # Maybe look into a setting that QCompleter has to show all options, just filtering them?
         
         if len(text) > 0 :
 
@@ -640,15 +661,30 @@ class Smarty:
                     break
                 address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
                 suggestion_list.append(address)
+            
+            self.iface.messageBar().pushMessage("FAIL: ", str(suggestion_list), level=Qgis.Critical, duration=6)
 
             # Set completer object and connect it to the lineEdit
-            completer = QCompleter(suggestion_list, caseSensitivity=QtCore.Qt.CaseInsensitive)
+            # m = QStringListModel(suggestion_list, self.completer)
+            # self.completer.setModel(m)
             
-            self.dlg.autocomplete.setCompleter(completer)
+            # self.dlg.autocomplete.setCompleter(self.completer)
 
+            # self.dlg.autocomplete.show()
+
+            self.autocomplete_model = QStandardItemModel()
+            for text in suggestion_list:
+                self.autocomplete_model.appendRow(QStandardItem(text))
+
+            self.completer.setModel(self.autocomplete_model)
+            self.dlg.autocomplete.setCompleter(self.completer)
             self.dlg.autocomplete.show()
 
-            # TODO: MAYBE FIGURE OUT HOW TO DO THE FILTERING?
+            # TODO: MAYBE FIGURE OUT HOW TO DO THE FILTERING? -> from the SDK
+
+        else:
+            return
+            # If people backspace til there is nothing left it comes here...
     
     def set_address(self, candidate):
         address = ''
@@ -691,6 +727,10 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
+
+            # Disable sections of dialogue box
+            self.dlg.frame.setDisabled(True)
+            self.dlg.add_csv.setDisabled(True)
             
             # Listen for clicked buttons
             self.dlg.pushButton.clicked.connect(self.smarty_single)
@@ -701,7 +741,10 @@ class Smarty:
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
 
-            #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
+            if self.dlg.csv_file.fileChanged: # len(self.dlg.csv_file.filePath()) > 0
+                #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
+                self.dlg.add_csv.setEnabled(True)
+
             self.dlg.add_csv.clicked.connect(self.add_csv)
 
             # Add authentication information
@@ -709,9 +752,6 @@ class Smarty:
                 ############################## THIS IS GETTING HIT EVERYTIME WE OPEN THE PLUGIN... SO WE NEED TO THINK ABOUT HOW TO STORE IT ACROSS SESSIONS... MAYBE NOT IN THIS FILE...
                 self.iface.messageBar().pushMessage("NILL AUTH_ID IN SETTINGS: ", "auth_id is nil", level=Qgis.Critical, duration=6)
             self.dlg.add_tokens.clicked.connect(self.enable_box)
-
-            # Disable sections of dialogue box
-            self.dlg.frame.setDisabled(True)
 
             # Fill drop downs
             self.refresh_layers()
@@ -723,7 +763,7 @@ class Smarty:
             self.dlg.stacked_widget.setVisible(False)
 
             # Autocompleter listener
-            self.dlg.autocomplete.textChanged.connect(self.autocomplete)
+            self.dlg.autocomplete.textEdited.connect(self.autocomplete)
          
 
             # Resize Dialog box for batch lookups
@@ -734,6 +774,7 @@ class Smarty:
         # Run the dialog event loop
         result = self.dlg.exec_()
         
+        # TODO: I am not sure this is needed?
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
