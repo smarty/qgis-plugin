@@ -30,7 +30,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
                        QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
-                        QgsMapLayer)
+                        QgsMapLayer, QgsFeatureRequest)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
@@ -265,12 +265,12 @@ class Smarty:
             "memory") 
         else:
             ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
-            # layers = self.refresh_layers()
-            # selected_layer = layers[self.dlg.layer_box.currentIndex()] 
+            layers = self.refresh_layers()
+            layer_out = layers[self.dlg.layer_box.currentIndex()] 
 
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            "Smarty",
-            "memory") 
+            # layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+            # "Smarty",
+            # "memory") 
 
             # if selected_layer.attributeList != layer_out:
             #     self.iface.messageBar().pushMessage("CANNOT USE LAYER: ", "Pick a previous vector layer with the correct attributes or create a new layer", level=Qgis.Critical, duration=6)
@@ -541,7 +541,6 @@ class Smarty:
         #     self.iface.messageBar().pushMessage("Error: ", message, level=Qgis.Critical, duration=6)
         #     return
 
-        QMessageBox.warning( self, 'Wrong', 'Incorrect user or password')
         self.dlg.frame.setEnabled(True)
     
     def meta_resize(self):
@@ -561,10 +560,23 @@ class Smarty:
 
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer:
+                
+                attributeTableConfig = layer.attributeTableConfig()
+
+                temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+                "Smarty",
+                "memory") 
+                temp_attributeTableConfig = temp_layer.attributeTableConfig()
+
+                if attributeTableConfig.hasSameColumns(temp_attributeTableConfig):
+                    layers_list.append(layer)
+
                 layers_list.append( layer )
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
+
+        return layers_list
     
     def fill_symbols(self):
         # TODO: gather all the output options
@@ -640,15 +652,7 @@ class Smarty:
         return layer_out
     
     def autocomplete(self):
-        text = self.dlg.autocomplete.text()
-
-        # It keeps hitting the API and returning info, but it does something weird how
-        # if you keep typing it returns matches
-        # if I type out east nothing comes up... 
-        # if I type 'E' then it also returns information
-        # I wonder if QCompleter is doing something interesting and filtering the information
-        # Before I can even get there... 
-        # Maybe look into a setting that QCompleter has to show all options, just filtering them?
+        text = self.dlg.single_address_lookup.text()
         
         if len(text) > 0 :
 
@@ -669,30 +673,20 @@ class Smarty:
                     break
                 address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
                 suggestion_list.append(address)
-            
-            self.iface.messageBar().pushMessage("FAIL: ", str(suggestion_list), level=Qgis.Critical, duration=6)
 
             # Set completer object and connect it to the lineEdit
-            # m = QStringListModel(suggestion_list, self.completer)
-            # self.completer.setModel(m)
-            
-            # self.dlg.autocomplete.setCompleter(self.completer)
-
-            # self.dlg.autocomplete.show()
-
             self.autocomplete_model = QStandardItemModel()
             for text in suggestion_list:
                 self.autocomplete_model.appendRow(QStandardItem(text))
 
             self.completer.setModel(self.autocomplete_model)
-            self.dlg.autocomplete.setCompleter(self.completer)
-            self.dlg.autocomplete.show()
+            self.dlg.single_address_lookup.setCompleter(self.completer)
+            self.dlg.single_address_lookup.show()
 
             # TODO: MAYBE FIGURE OUT HOW TO DO THE FILTERING? -> from the SDK
 
         else:
             return
-            # If people backspace til there is nothing left it comes here...
     
     def set_address(self, candidate):
         address = ''
@@ -805,10 +799,7 @@ class Smarty:
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
 
-            # if self.dlg.closeEvent():
-            #     self.reminder()
-
-            if self.dlg.csv_file.fileChanged: # len(self.dlg.csv_file.filePath()) > 0
+            if self.dlg.csv_file.fileChanged: # I DON'T THINK THIS IS DOING ANYTHING
                 #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
                 self.dlg.add_csv.setEnabled(True)
 
@@ -830,7 +821,7 @@ class Smarty:
             self.dlg.stacked_widget.setVisible(False)
 
             # Autocompleter listener
-            self.dlg.autocomplete.textEdited.connect(self.autocomplete)
+            self.dlg.single_address_lookup.textEdited.connect(self.autocomplete)
          
 
             # Resize Dialog box for batch lookups

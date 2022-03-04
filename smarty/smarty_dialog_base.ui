@@ -32,7 +32,7 @@
       <widget class="QPushButton" name="pushButton">
        <property name="geometry">
         <rect>
-         <x>190</x>
+         <x>200</x>
          <y>290</y>
          <width>391</width>
          <height>41</height>
@@ -878,29 +878,6 @@
         <string>Visit Smarty</string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="autocomplete">
-       <property name="geometry">
-        <rect>
-         <x>350</x>
-         <y>170</y>
-         <width>221</width>
-         <height>21</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_14">
-       <property name="geometry">
-        <rect>
-         <x>370</x>
-         <y>150</y>
-         <width>101</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Autocomplete:</string>
-       </property>
-      </widget>
       <widget class="QFrame" name="layer_stacked">
        <property name="geometry">
         <rect>
@@ -929,7 +906,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="page">
          <widget class="QFrame" name="new_layer_frame">
@@ -1464,8 +1441,8 @@
          <widget class="QLabel" name="label_32">
           <property name="geometry">
            <rect>
-            <x>120</x>
-            <y>130</y>
+            <x>110</x>
+            <y>190</y>
             <width>81</width>
             <height>16</height>
            </rect>
@@ -1478,7 +1455,7 @@
           <property name="geometry">
            <rect>
             <x>220</x>
-            <y>130</y>
+            <y>190</y>
             <width>201</width>
             <height>21</height>
            </rect>
@@ -1505,6 +1482,136 @@
           </property>
           <property name="text">
            <string>Point Size:</string>
+          </property>
+         </widget>
+         <widget class="QStackedWidget" name="stacked_widget_2">
+          <property name="geometry">
+           <rect>
+            <x>130</x>
+            <y>110</y>
+            <width>271</width>
+            <height>51</height>
+           </rect>
+          </property>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="page_3">
+           <widget class="QFrame" name="new_layer_frame_2">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>10</y>
+              <width>211</width>
+              <height>21</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">border:0</string>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <widget class="QLabel" name="label_42">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>81</width>
+               <height>21</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Layer Name:</string>
+             </property>
+            </widget>
+            <widget class="QLineEdit" name="layer_name_batch">
+             <property name="geometry">
+              <rect>
+               <x>90</x>
+               <y>0</y>
+               <width>111</width>
+               <height>16</height>
+              </rect>
+             </property>
+            </widget>
+           </widget>
+          </widget>
+          <widget class="QWidget" name="page_4">
+           <widget class="QFrame" name="existing_layer_frame_2">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>10</y>
+              <width>241</width>
+              <height>41</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">border:0</string>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <widget class="QLabel" name="label_43">
+             <property name="geometry">
+              <rect>
+               <x>10</x>
+               <y>20</y>
+               <width>91</width>
+               <height>16</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Select Layer:</string>
+             </property>
+            </widget>
+           </widget>
+           <widget class="QComboBox" name="layer_box_batch">
+            <property name="geometry">
+             <rect>
+              <x>90</x>
+              <y>30</y>
+              <width>121</width>
+              <height>16</height>
+             </rect>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: grey</string>
+            </property>
+           </widget>
+          </widget>
+         </widget>
+         <widget class="QRadioButton" name="new_layer_batch">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>110</y>
+            <width>99</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>New Layer</string>
+          </property>
+         </widget>
+         <widget class="QRadioButton" name="existing_layer_batch">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>140</y>
+            <width>111</width>
+            <height>21</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Existing Layer</string>
           </property>
          </widget>
         </widget>
