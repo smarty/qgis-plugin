@@ -21,33 +21,34 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer, QSettings, QStringListModel
-from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery
+from qgis.PyQt.QtGui import QIcon, QColor
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit, QGridLayout
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
                        QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
+                       QgsVectorFileWriter, QgsCoordinateTransformContext, QgsLayerDefinition, QgsLayerTreeLayer, QgsMapLayer,
                         QgsMapLayer, QgsFeatureRequest)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
+from smartystreets_python_sdk.us_street import Analysis as analysis
 from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
 #########
 
 # Initialize Qt resources from file resources.py
 from .resources import *
-# Import the code for the dialog
+# Import the code for the dialogfrom .smarty_dialog import SmartyDialog
 from .smarty_dialog import SmartyDialog, SaveDialog
 from .utils import Utils
 import os.path
 import sys
 import pandas as pd
 import webbrowser
-import itertools
 
 
 class Smarty:
@@ -244,7 +245,10 @@ class Smarty:
 
         success = self.handle_success(result)
 
-        if success == "invalid_address":
+        if success == "No Match. The address is invalid.":
+            self.dlg.resize(627, 586)
+            self.dlg.results.setVisible(True)
+            self.dlg.summary_result.setText(success)
             self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
             return
 
@@ -271,6 +275,9 @@ class Smarty:
             "memory") 
         else:
             ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+            "Smarty",
+            "memory") 
             layers = self.refresh_layers()
             layer_out = layers[self.dlg.layer_box.currentIndex()] 
 
@@ -285,6 +292,7 @@ class Smarty:
 
                                                             ######### SET RESULTS ON GUI
         
+        # TODO: Put this in a function so it is not repeated -- do I really need to set it = to a variable? Address maybe, but the other ones not so much
         id = '1' # TODO: We need to find a way to query the layer we are on?
         address = self.set_address(candidate)
         longitude = candidate.metadata.longitude
@@ -301,7 +309,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(627,586)
+        self.dlg.resize(627,613)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -321,7 +329,7 @@ class Smarty:
         self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
         self.dlg.dst_result.setText(str(dst))
-        # self.dlg.success_result.setText(success)
+        self.dlg.summary_result.setText(success)
 
         ############################################################################################################################
 
@@ -374,10 +382,18 @@ class Smarty:
         self.refresh_layers()
 
         layer_out.commitChanges()
+    def handle_success(self, result):
+        if len(result) == 0 or Utils.is_invalid(result[0].analysis):
+            return "No Match - The address is invalid."
+        if result[0].metadata.zip_type == "POBox":
+            return "No Match - PO Box Only. The ZIP Code is PO Box delivery only."
+        return Utils.verify_results(result[0].analysis)
+
 
     def smarty_batch(self):
 
         df = pd.read_csv(self.dlg.csv_file.filePath())
+        
 
         if self.dlg.id_box.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
@@ -636,6 +652,7 @@ class Smarty:
         return layers_list
     
     def fill_symbols(self):
+        # TODO: gather all the output options --> the equilateral_triangle and regular_star is kind of sketchy...
         # TODO: gather all the output options
 
         # for cat in renderer.categories(): ############# RENDERER NOT DEFINED
@@ -871,7 +888,6 @@ class Smarty:
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
             self.dlg.meta_data.clicked.connect(self.meta_resize)
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
-            self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
             self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
