@@ -244,7 +244,7 @@ class Smarty:
 
         success = self.handle_success(result)
 
-        if success == "No Match. The address is invalid.":
+        if len(result) == 0 or success == "No Match - The address is invalid.":
             self.dlg.resize(627, 586)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
@@ -839,17 +839,6 @@ class Smarty:
         self.dlg.batch_state.clear()
         self.dlg.batch_zip.clear()
         self.dlg.batch_point_label.clear()
-
-    def handle_success(self, result):
-        if Utils.is_valid(result):
-            return "valid_address"
-        if Utils.is_invalid(result):
-            return "invalid_address"
-        if Utils.is_missing_secondary(result):
-            return "missing_secondary"
-        if Utils.is_ambiguous(result):
-            return "ambiguous_address"
-        return "MAJOR ERROR"
 
     def run(self):
         """Run method that performs all the real work"""
