@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>618</width>
-    <height>388</height>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1023,6 +1023,9 @@
          <height>27</height>
         </rect>
        </property>
+       <property name="value">
+        <number>10</number>
+       </property>
       </widget>
      </widget>
      <widget class="QWidget" name="tab_2">
@@ -1163,7 +1166,7 @@
             <x>20</x>
             <y>40</y>
             <width>511</width>
-            <height>91</height>
+            <height>81</height>
            </rect>
           </property>
          </widget>
@@ -1354,7 +1357,7 @@
          <widget class="QLabel" name="label_9">
           <property name="geometry">
            <rect>
-            <x>20</x>
+            <x>0</x>
             <y>10</y>
             <width>101</width>
             <height>16</height>
@@ -1373,38 +1376,9 @@
          <widget class="QComboBox" name="symbol_drop_down">
           <property name="geometry">
            <rect>
-            <x>130</x>
+            <x>110</x>
             <y>10</y>
-            <width>141</width>
-            <height>21</height>
-           </rect>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_5">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>70</y>
-            <width>101</width>
-            <height>16</height>
-           </rect>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Layer Name:</string>
-          </property>
-         </widget>
-         <widget class="QLineEdit" name="layer_name">
-          <property name="geometry">
-           <rect>
-            <x>140</x>
-            <y>70</y>
-            <width>131</width>
+            <width>191</width>
             <height>21</height>
            </rect>
           </property>
@@ -1412,7 +1386,7 @@
          <widget class="QLabel" name="label_10">
           <property name="geometry">
            <rect>
-            <x>290</x>
+            <x>310</x>
             <y>10</y>
             <width>91</width>
             <height>16</height>
@@ -1431,9 +1405,9 @@
          <widget class="QgsColorButton" name="symbol_color">
           <property name="geometry">
            <rect>
-            <x>400</x>
+            <x>410</x>
             <y>10</y>
-            <width>141</width>
+            <width>131</width>
             <height>21</height>
            </rect>
           </property>
@@ -1441,8 +1415,8 @@
          <widget class="QLabel" name="label_32">
           <property name="geometry">
            <rect>
-            <x>110</x>
-            <y>190</y>
+            <x>10</x>
+            <y>130</y>
             <width>81</width>
             <height>16</height>
            </rect>
@@ -1454,8 +1428,8 @@
          <widget class="QComboBox" name="batch_point_label">
           <property name="geometry">
            <rect>
-            <x>220</x>
-            <y>190</y>
+            <x>100</x>
+            <y>130</y>
             <width>201</width>
             <height>21</height>
            </rect>
@@ -1464,18 +1438,21 @@
          <widget class="QgsSpinBox" name="symbol_size_batch">
           <property name="geometry">
            <rect>
-            <x>400</x>
+            <x>410</x>
             <y>60</y>
             <width>131</width>
             <height>27</height>
            </rect>
           </property>
+          <property name="value">
+           <number>10</number>
+          </property>
          </widget>
          <widget class="QLabel" name="label_41">
           <property name="geometry">
            <rect>
-            <x>290</x>
-            <y>70</y>
+            <x>310</x>
+            <y>60</y>
             <width>81</width>
             <height>16</height>
            </rect>
@@ -1484,20 +1461,20 @@
            <string>Point Size:</string>
           </property>
          </widget>
-         <widget class="QStackedWidget" name="stacked_widget_2">
+         <widget class="QStackedWidget" name="stacked_widget_batch">
           <property name="geometry">
            <rect>
-            <x>130</x>
-            <y>110</y>
-            <width>271</width>
-            <height>51</height>
+            <x>110</x>
+            <y>50</y>
+            <width>201</width>
+            <height>71</height>
            </rect>
           </property>
           <property name="currentIndex">
            <number>0</number>
           </property>
           <widget class="QWidget" name="page_3">
-           <widget class="QFrame" name="new_layer_frame_2">
+           <widget class="QFrame" name="new_layer_frame_batch">
             <property name="geometry">
              <rect>
               <x>10</x>
@@ -1533,7 +1510,7 @@
               <rect>
                <x>90</x>
                <y>0</y>
-               <width>111</width>
+               <width>91</width>
                <height>16</height>
               </rect>
              </property>
@@ -1541,13 +1518,13 @@
            </widget>
           </widget>
           <widget class="QWidget" name="page_4">
-           <widget class="QFrame" name="existing_layer_frame_2">
+           <widget class="QFrame" name="existing_layer_frame_batch">
             <property name="geometry">
              <rect>
-              <x>0</x>
+              <x>10</x>
               <y>10</y>
-              <width>241</width>
-              <height>41</height>
+              <width>201</width>
+              <height>51</height>
              </rect>
             </property>
             <property name="styleSheet">
@@ -1559,40 +1536,40 @@
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <widget class="QLabel" name="label_43">
+            <widget class="QComboBox" name="layer_box_batch">
              <property name="geometry">
               <rect>
-               <x>10</x>
-               <y>20</y>
+               <x>100</x>
+               <y>30</y>
                <width>91</width>
                <height>16</height>
               </rect>
              </property>
-             <property name="text">
-              <string>Select Layer:</string>
+             <property name="styleSheet">
+              <string notr="true">color: grey</string>
              </property>
             </widget>
            </widget>
-           <widget class="QComboBox" name="layer_box_batch">
+           <widget class="QLabel" name="label_43">
             <property name="geometry">
              <rect>
-              <x>90</x>
-              <y>30</y>
-              <width>121</width>
+              <x>10</x>
+              <y>40</y>
+              <width>91</width>
               <height>16</height>
              </rect>
             </property>
-            <property name="styleSheet">
-             <string notr="true">color: grey</string>
+            <property name="text">
+             <string>Select Layer:</string>
             </property>
            </widget>
           </widget>
          </widget>
-         <widget class="QRadioButton" name="new_layer_batch">
+         <widget class="QRadioButton" name="new_layer_radio_batch">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>110</y>
+            <x>0</x>
+            <y>60</y>
             <width>99</width>
             <height>20</height>
            </rect>
@@ -1601,11 +1578,11 @@
            <string>New Layer</string>
           </property>
          </widget>
-         <widget class="QRadioButton" name="existing_layer_batch">
+         <widget class="QRadioButton" name="existing_layer_radio_batch">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>140</y>
+            <x>0</x>
+            <y>90</y>
             <width>111</width>
             <height>21</height>
            </rect>
