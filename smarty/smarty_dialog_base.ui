@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>625</width>
-    <height>791</height>
+    <height>386</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -786,7 +786,7 @@
        <widget class="QLabel" name="rdi_result">
         <property name="geometry">
          <rect>
-          <x>390</x>
+          <x>460</x>
           <y>40</y>
           <width>91</width>
           <height>20</height>
