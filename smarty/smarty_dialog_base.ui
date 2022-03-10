@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>618</width>
-    <height>385</height>
+    <width>625</width>
+    <height>791</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -661,10 +661,10 @@
        <widget class="QLabel" name="label_29">
         <property name="geometry">
          <rect>
-          <x>340</x>
+          <x>280</x>
           <y>40</y>
-          <width>60</width>
-          <height>16</height>
+          <width>181</width>
+          <height>20</height>
          </rect>
         </property>
         <property name="font">
@@ -675,13 +675,13 @@
          </font>
         </property>
         <property name="text">
-         <string>RDI:</string>
+         <string>Residential/Commercial:</string>
         </property>
        </widget>
        <widget class="QLabel" name="label_30">
         <property name="geometry">
          <rect>
-          <x>340</x>
+          <x>280</x>
           <y>10</y>
           <width>81</width>
           <height>16</height>
@@ -773,7 +773,7 @@
        <widget class="QLabel" name="time_zone_result">
         <property name="geometry">
          <rect>
-          <x>450</x>
+          <x>390</x>
           <y>10</y>
           <width>91</width>
           <height>20</height>
@@ -786,7 +786,7 @@
        <widget class="QLabel" name="rdi_result">
         <property name="geometry">
          <rect>
-          <x>450</x>
+          <x>390</x>
           <y>40</y>
           <width>91</width>
           <height>20</height>
@@ -812,10 +812,10 @@
        <widget class="QLabel" name="label_31">
         <property name="geometry">
          <rect>
-          <x>340</x>
+          <x>280</x>
           <y>70</y>
-          <width>60</width>
-          <height>16</height>
+          <width>161</width>
+          <height>20</height>
          </rect>
         </property>
         <property name="font">
@@ -826,7 +826,7 @@
          </font>
         </property>
         <property name="text">
-         <string>DST:</string>
+         <string>Daylight Savings Time:</string>
         </property>
        </widget>
       </widget>
