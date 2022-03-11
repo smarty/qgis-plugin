@@ -47,19 +47,27 @@ class SmartyDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
 
     def closeEvent(self, event):
-        # self.save_dlg = SaveDialog()
 
         self.save_dlg = QDialog()
         self.save_dlg.setWindowTitle("ALERT")
-        self.save_dlg.setWindowModality(Qt.ApplicationModal)
-        message = QLabel("WARNING: All added data and information is contained on a temporary memory layer. Please make your newly created layer permanent before you close your application.", self.save_dlg)
+
+        title = QLabel("WARNING:", self.save_dlg)
+        title.setFont(QFont("Helvetica",weight=QFont.Bold))
+        title.setGeometry(10,10,100,10)
+
+        #TODO: Should we add a QFrame so that it looks a little better?
+        
+        message = QLabel("Information currently is contained on a temporary memory layer. Please make your layer permanent before you close QGIS.", self.save_dlg)
+        message.setGeometry(20,20, 200, 100)
         message.setWordWrap(True)
-        message.setGeometry(100,100, 200, 100)
-        message.move(200,50)
 
         self.save_dlg.show()
 
-class SaveDialog(QtWidgets.QDialog, FORM_CLASS):
+
+FORM_CLASS_, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'smarty_dialog_base.ui'))
+
+class SaveDialog(QtWidgets.QDialog, FORM_CLASS_):
     def __init__(self, parent=None):
         super(SaveDialog, self).__init__(parent)
         self.setupUi(self)

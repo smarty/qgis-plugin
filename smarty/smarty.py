@@ -21,7 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer, QSettings, QStringListModel
+from itertools import count
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QStringListModel
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
@@ -47,8 +48,9 @@ import os.path
 import sys
 import pandas as pd
 import webbrowser
-import itertools
-
+import csv
+import time
+import thread
 
 class Smarty:
     """QGIS Plugin Implementation."""
@@ -84,8 +86,6 @@ class Smarty:
             'Smarty_{}.qm'.format(locale))
         
         self.settings = QSettings()
-        self.settings.setValue('auth_id', "")
-        self.settings.setValue('auth_token', "")
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -244,7 +244,7 @@ class Smarty:
 
         success = self.handle_success(result)
 
-        if len(result) == 0 or success == "No Match - The address is invalid.":
+        if success == "No Match. The address is invalid.":
             self.dlg.resize(627, 586)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
@@ -259,7 +259,7 @@ class Smarty:
         project = QgsProject.instance()
 
         if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             'Smarty',
             "memory") 
 
@@ -269,26 +269,18 @@ class Smarty:
             if layer_name == "":
                 layer_name = "Smarty"
             
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             layer_name,
             "memory") 
         else:
             ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
             layers = self.refresh_layers()
             layer_out = layers[self.dlg.layer_box.currentIndex()] 
-
-            # layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            # "Smarty",
-            # "memory") 
-
-            # if selected_layer.attributeList != layer_out:
-            #     self.iface.messageBar().pushMessage("CANNOT USE LAYER: ", "Pick a previous vector layer with the correct attributes or create a new layer", level=Qgis.Critical, duration=6)
         
         ############################################################################################################################
 
                                                             ######### SET RESULTS ON GUI
         
-        id = '1' # TODO: We need to find a way to query the layer we are on?
         address = self.set_address(candidate)
         longitude = candidate.metadata.longitude
         latitude = candidate.metadata.latitude
@@ -339,7 +331,7 @@ class Smarty:
         else:
             label = self.dlg.point_label.text() 
 
-        feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+        feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
         county_fips, rdi, cong_dist, time_zone, dst, label])   
 
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText(), self.dlg.symbol_size_single.value())
@@ -353,9 +345,7 @@ class Smarty:
 
         project.addMapLayer(layer_out)
 
-        ############################################################################################################################
-
-                                                            ######### ZOOM TO BOUNDING BOX 
+        ################################################################################################       ZOOM TO BOUNDING BOX:
         
         if self.dlg.zoom_in.isChecked(): 
             # convert coordinates
@@ -386,9 +376,9 @@ class Smarty:
 
 
     def smarty_batch(self):
+        start = time.time()
 
         df = pd.read_csv(self.dlg.csv_file.filePath())
-        
 
         if self.dlg.id_box.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
@@ -401,46 +391,35 @@ class Smarty:
         state = self.dlg.batch_state.currentText()
         zip = self.dlg.batch_zip.currentText()
 
+        message = address + city + state + zip
+        self.iface.messageBar().pushMessage("Error: ", message, level=Qgis.Critical, duration=6)
+
         add_df = df[[id_column_name, address, city, state, zip]].copy()
 
         project = QgsProject.instance()
         
         ##############################################################################################################################
 
-        if self.dlg.new_layer_radio_batch.text() == '':
+        if self.dlg.layer_name_batch.text() == '':
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             'Smarty',
             "memory") 
-        elif self.dlg.new_layer_radio_batch.isChecked():
+        else:
             layer_name = self.dlg.layer_name_batch.text()
-            
-            if layer_name == "":
-                layer_name = "Smarty"
             
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             layer_name,
             "memory") 
-        else:
-            ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
-            layers = self.refresh_layers()
-            layer_out = layers[self.dlg.layer_box_batch.currentIndex()] 
+        # else:
+        #     layers = self.refresh_layers()
+        #     layer_out = layers[self.dlg.layer_box_batch.currentIndex()] 
 
-            # layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            # "Smarty",
-            # "memory") 
 
-            # if selected_layer.attributeList != layer_out:
-            #     self.iface.messageBar().pushMessage("CANNOT USE LAYER: ", "Pick a previous vector layer with the correct attributes or create a new layer", level=Qgis.Critical, duration=6)
+        ####################################################################################################     START SMARTY PROCESSING:
 
-        ##############################################################################################################################
-                        ######################### START SMARTY PROCESSING
-
-        # Authentication #### UN COMMENT THIS PART
-        # auth_id = self.dlg.auth_id.text() # "c21cabd2-1a89-7746-e799-d35d70d7080b" #
-        # auth_token = self.dlg.auth_token.text() # "nD3IIoyZ3H4LSzNp6qpl" #
-        
-        auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b" #
-        auth_token = "nD3IIoyZ3H4LSzNp6qpl" #
+        # Authentication
+        auth_id = self.dlg.auth_id.text() # "c21cabd2-1a89-7746-e799-d35d70d7080b" #
+        auth_token = self.dlg.auth_token.text() # "nD3IIoyZ3H4LSzNp6qpl" #
 
         credentials = StaticCredentials(auth_id, auth_token)
 
@@ -448,117 +427,96 @@ class Smarty:
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
         batch = Batch()
 
-        ###############################################################################################################################
-        
+        counter = 0
         for i, row in add_df.iterrows():
-
             batch.add(StreetLookup())
-            batch[i].street = row[address]
-            batch[i].city = row[city]
-            batch[i].state = row[state]
-            batch[i].zipcode = str(row[zip]) # TODO: MAYBE MAKE A CHECK TO SEE IF THE COLUMN IS NUMERIC? DOES THIS EVEN MATTER?
-            batch[i].match = 'enhanced'
+            batch[counter].street = row[address] # so on the 101th round it is trying to put the address in the batch?
+            batch[counter].city = row[city]
+            batch[counter].state = row[state] 
+            batch[counter].zipcode = str(row[zip])# TODO: MAYBE MAKE A CHECK TO SEE IF THE COLUMN IS NUMERIC? DOES THIS EVEN MATTER?
+            batch[counter].match = 'enhanced'
 
-        try:
-            client.send_batch(batch)
-        except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
-            self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
-            return
+            counter += 1
 
-        ##################################################################################################################################
-                            ######################## ITERATE OVER RESULTS
-        non_validated = []
-        for i, lookup in enumerate(batch):
-
-            candidates = lookup.result
-
-            if len(candidates) == 0:
-                self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
-                non_validated.append(lookup) # TODO: What should I do with these addresses?
-                continue
+            # TODO: We would want to start a new thread right here
             
-            candidates = lookup.result
-            candidate = candidates[0]
+            if batch.is_full():
+                # how do we reset the batch?
 
-            longitude = candidate.metadata.longitude
-            latitude = candidate.metadata.latitude
-            address = self.set_address(candidate)
-            longitude = candidate.metadata.longitude
-            latitude = candidate.metadata.latitude
+                thread.start_new_thread() # I think it needs a function and then in parens the parameters it takes
+                try:
+                    client.send_batch(batch)
+                except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
+                    self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
+                    return
+                
+                non_validated = []
+                for _, lookup in enumerate(batch):
 
-            city = candidate.components.city_name
-            state = candidate.components.state_abbreviation
-            zip_code = candidate.components.zipcode
-            zip_4 = candidate.components.plus4_code
+                    candidates = lookup.result
 
-            precision = candidate.metadata.precision
-            county = candidate.metadata.county_name
-            county_fips = candidate.metadata.county_fips
-            rdi = candidate.metadata.rdi
-            cong_dist = candidate.metadata.congressional_district
-            time_zone = candidate.metadata.time_zone
-            dst = candidate.metadata.obeys_dst
+                    if len(candidates) == 0:
+                        self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
+                        non_validated.append(lookup) # TODO: What should I do with these addresses?
+                        continue
+                    
+                    candidates = lookup.result
+                    candidate = candidates[0]
 
-            point_out = QgsPointXY(longitude, latitude)
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+                    longitude = candidate.metadata.longitude
+                    latitude = candidate.metadata.latitude
+                    address_result = self.set_address(candidate)
+                    longitude = candidate.metadata.longitude
+                    latitude = candidate.metadata.latitude
 
-            # TODO: Do a checkbox that will enable the drop down? and if it is not clicked than we will not set it, or add 'None' to the list and if it is 'None' than don't set the label
-            if self.dlg.batch_point_label.currentText() == 'None':
-                label = ''
-            # elif self.dlg.batch_point_label.currentIndex == -1:
-            #     label = address
-            else:
-                label = str(df.at[i,self.dlg.batch_point_label.currentText()])
-                layer_out = self.set_label_batch(layer_out)
-            
+                    city_result = candidate.components.city_name
+                    state_result = candidate.components.state_abbreviation
+                    zip_result = candidate.components.zipcode
+                    zip_4 = candidate.components.plus4_code
 
-            id = str(df.at[i,id_column_name])
-            
-            feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-                    county_fips, rdi, cong_dist, time_zone, dst, label])
+                    precision = candidate.metadata.precision
+                    county = candidate.metadata.county_name
+                    county_fips = candidate.metadata.county_fips
+                    rdi = candidate.metadata.rdi
+                    cong_dist = candidate.metadata.congressional_district
+                    time_zone = candidate.metadata.time_zone
+                    dst = candidate.metadata.obeys_dst
 
-            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
-            
-            layer_out.dataProvider().addFeature(feature)
-            layer_out.renderer().setSymbol(symbol)
-            
-            layer_out.updateExtents()
-        
+                    point_out = QgsPointXY(longitude, latitude)
+                    feature = QgsFeature()
+                    feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
-        ################## THIESE ARE MY DIFFERENT ATTEMPTS TO SOLVING THE ID PROBLEM ON THE SAME 
-        features = layer_out.getFeatures() #QgsFeatureRequest().setFilterFid(1)
-        # lenattr = len([feature for feature in layer_out.getFeatures()])
-        # for feature in features:
-        #     attr = feature.attributes()
-        #     # Attributes of a specific feature
-        #     # we need the first attribute of the last feature 
-        #     self.iface.messageBar().pushMessage("NO MATCH: ", str(lenattr), level=Qgis.Critical, duration=6)
+                    if self.dlg.batch_point_label.currentText() == 'None':
+                        label = ''
+                    else:
+                        label = str(df.at[i,self.dlg.batch_point_label.currentText()])
+                        layer_out = self.set_label_batch(layer_out)
+                    
 
-        request = QgsFeatureRequest()
+                    id = str(df.at[i,id_column_name])
+                    
+                    feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
+                            county_fips, rdi, cong_dist, time_zone, dst, label])
 
-        clause = QgsFeatureRequest.OrderByClause('id', ascending=False)
-        orderby = QgsFeatureRequest.OrderBy([clause])
-        request.setOrderBy(orderby)
-        
-        # feature_objects = layer_out.getFeatures(QgsFeatureRequest().addOrderBy('id', False)) #
+                    symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
+                    
+                    layer_out.dataProvider().addFeature(feature)
+                    layer_out.renderer().setSymbol(symbol)
+                    
+                    layer_out.updateExtents()
 
-        # feature = next(itertools.islice(feature_objects, 49, 50))    
-        # self.iface.messageBar().pushMessage("NO MATCH: ", str(feature), level=Qgis.Critical, duration=6)
-
-        # features = list(feature_objects)[len([feature for feature in layer_out.getFeatures()]) -1]
-
-        # i = 0
-        # for feature in feature_objects.rewind():
-        #     i = i + 1
-        #     # attr = feature.attributes()
-        #     self.iface.messageBar().pushMessage("NO MATCH: ", str(feature[0]), level=Qgis.Critical, duration=6)
-        #     if i == 1:
-        #         break
+                batch.clear()
+            counter = 0
         
         project.addMapLayer(layer_out)
+        self.save_csv_resize()
 
-            # TODO: output a list of the validated and non validated addresses?
+
+        end = time.time()
+        batch_time = (end - start)
+        self.iface.messageBar().pushMessage("Batch ran in the following time: ", str(batch_time), level=Qgis.Critical, duration=6)
+        
+        # TODO: output a list of the validated and non validated addresses?
 
     def smarty_geo_link(self):
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
@@ -575,13 +533,12 @@ class Smarty:
         return symbol
     
     def add_tokens(self): ## FIXME: THIS IS DISABLED SO THAT IT DOESN'T TAKE 5EVER TO TEST
-        #TODO: FIGURE OUT SAVED VALUES OVER SESSIONS
-        if self.settings.value("auth_id") != None:
-            self.settings.setValue("auth_id", self.dlg.auth_id.text())
-            self.settings.setValue("auth_token", self.dlg.auth_token.text())
-        else:
-            auth_id_len = len(self.dlg.auth_id.text())
-            auth_token_len = len(self.dlg.auth_token.text())
+
+        self.settings.setValue("auth_id", self.dlg.auth_id.text())
+        self.settings.setValue("auth_token", self.dlg.auth_token.text())
+
+        auth_id_len = len(self.dlg.auth_id.text())
+        auth_token_len = len(self.dlg.auth_token.text())
         
         if auth_id_len == 0 and auth_token_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID and an Auth Token", level=Qgis.Critical, duration=6)
@@ -593,7 +550,6 @@ class Smarty:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth Token", level=Qgis.Critical, duration=6)
             return
         
-        # TODO: send an API request here! 
         # credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text()) ######## This takes soooo long
         # client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
         # lookup = StreetLookup()
@@ -616,6 +572,10 @@ class Smarty:
             self.dlg.resize(627,586)
             self.dlg.meta_data_results.setVisible(False)
     
+    def save_csv_resize(self):
+        self.dlg.csv_output_frame.setVisible(True)
+        self.dlg.resize(627, 773)
+    
     def refresh_layers(self):
         layers = QgsProject.instance().layerTreeRoot().children()
 
@@ -624,7 +584,7 @@ class Smarty:
         layers = QgsProject.instance().mapLayers().values()
 
         for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer:
+            if layer.type() == QgsMapLayer.VectorLayer: # you can also compare layer.type() == 0 (means it's a vectorlayer)
                 
                 attributeTableConfig = layer.attributeTableConfig()
 
@@ -641,17 +601,16 @@ class Smarty:
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
 
-        self.dlg.layer_box_batch.clear()
-        self.dlg.layer_box_batch.addItems([layer.name() for layer in layers_list])
+        self.dlg.layer_save.clear()
+        self.dlg.layer_save.addItems([layer.name() for layer in layers_list])
+
+        # self.dlg.layer_box_batch.clear()
+        # self.dlg.layer_box_batch.addItems([layer.name() for layer in layers_list])
 
         return layers_list
     
     def fill_symbols(self):
-        # TODO: gather all the output options
-
-        # for cat in renderer.categories(): ############# RENDERER NOT DEFINED
-        #     # print("{}: {} :: {}".format(cat.value(), cat.label(), cat.symbol()))
-
+        # TODO: gather all the output options in a civilized manner
         symbols = ['star', 'regular_star', 'square', 'cross', 'rectangle', 'diamond', 'pentagon', 'triangle', 'equilateral_triangle', 'circle', 'arrow', 'filled_arrowhead', 'x']
 
         self.dlg.symbol_drop_down.addItems(symbol for symbol in symbols)
@@ -664,12 +623,12 @@ class Smarty:
         self.dlg.new_layer_frame.setDisabled(False)
         self.dlg.new_layer_frame.setVisible(True)
     
-    def show_new_layer_batch(self):
-        self.dlg.stacked_widget_batch.setCurrentIndex(0)
-        self.dlg.stacked_widget_batch.setVisible(True)
+    # def show_new_layer_batch(self):
+    #     self.dlg.stacked_widget_batch.setCurrentIndex(0)
+    #     self.dlg.stacked_widget_batch.setVisible(True)
 
-        self.dlg.new_layer_frame_batch.setDisabled(False)
-        self.dlg.new_layer_frame_batch.setVisible(True)
+    #     self.dlg.new_layer_frame_batch.setDisabled(False)
+    #     self.dlg.new_layer_frame_batch.setVisible(True)
 
     def show_existing_layer(self):
         self.dlg.stacked_widget.setVisible(True)
@@ -678,12 +637,12 @@ class Smarty:
         self.dlg.existing_layer_frame.setVisible(True)
         self.dlg.existing_layer_frame.setDisabled(False)
 
-    def show_existing_layer_batch(self):
-        self.dlg.stacked_widget_batch.setVisible(True)
-        self.dlg.stacked_widget_batch.setCurrentIndex(1)
+    # def show_existing_layer_batch(self):
+    #     self.dlg.stacked_widget_batch.setVisible(True)
+    #     self.dlg.stacked_widget_batch.setCurrentIndex(1)
         
-        self.dlg.existing_layer_frame_batch.setVisible(True)
-        self.dlg.existing_layer_frame_batch.setDisabled(False)
+    #     self.dlg.existing_layer_frame_batch.setVisible(True)
+    #     self.dlg.existing_layer_frame_batch.setDisabled(False)
     
     def set_label_single(self, layer_out):
         label_settings = QgsPalLayerSettings()
@@ -773,13 +732,13 @@ class Smarty:
     def set_address(self, candidate):
         address = ''
         if candidate.components.primary_number is not None:
-            address = address + candidate.components.primary_number
+            address = address + candidate.components.primary_number + ' '
         if candidate.components.street_predirection is not None:
-            address = address + candidate.components.street_predirection
+            address = address + candidate.components.street_predirection + ' '
         if candidate.components.street_name is not None:
-            address = address + candidate.components.street_name
+            address = address + candidate.components.street_name + ' '
         if candidate.components.street_postdirection is not None:
-            address = address + candidate.components.street_postdirection
+            address = address + candidate.components.street_postdirection + ' '
         
         return address
     
@@ -800,15 +759,14 @@ class Smarty:
         
         fields = df.columns.values.tolist()
 
-        if self.dlg.id_box.isChecked():
-            self.dlg.batch_id.addItems(field for field in fields)
-
-        self.dlg.batch_address.addItems(field for field in fields)
-        self.dlg.batch_city.addItems(field for field in fields)
-        self.dlg.batch_state.addItems(field for field in fields)
-        self.dlg.batch_zip.addItems(field for field in fields)
+        # TODO: I feel like we should be able to do this in a better manner
+        self.dlg.batch_address.addItems(fields)
+        self.dlg.batch_city.addItems(fields)
+        self.dlg.batch_state.addItems(fields)
+        self.dlg.batch_zip.addItems(fields)
+        self.dlg.batch_id.addItems(fields)
         fields.insert(0,"None")
-        self.dlg.batch_point_label.addItems(field for field in fields)
+        self.dlg.batch_point_label.addItems(fields)
 
     def enable_id_box(self):
         if len(self.dlg.csv_file.filePath()) == 0:
@@ -816,17 +774,11 @@ class Smarty:
             self.dlg.id_box.setChecked(False)
             return 
         if self.dlg.id_box.isChecked():
-            # IT IS GETTING IN HERE EVERYTIME FOR SOME REASON!
 
             self.dlg.batch_id.setEnabled(True)
-
-            df = pd.read_csv(self.dlg.csv_file.filePath())
-            
-            fields = df.columns.values.tolist()
-            self.dlg.batch_id.addItems(field for field in fields)
         else:
-            self.dlg.batch_id.clear()
             self.dlg.batch_id.setDisabled(True)
+            self.dlg.batch_id.clear()
     
     def reset_csv(self):
 
@@ -839,6 +791,43 @@ class Smarty:
         self.dlg.batch_state.clear()
         self.dlg.batch_zip.clear()
         self.dlg.batch_point_label.clear()
+
+    def handle_success(self, result):
+        if Utils.is_valid(result):
+            return "valid_address"
+        if Utils.is_invalid(result):
+            return "invalid_address"
+        if Utils.is_missing_secondary(result):
+            return "missing_secondary"
+        if Utils.is_ambiguous(result):
+            return "ambiguous_address"
+        return "MAJOR ERROR"
+
+    def output_csv(self):
+        if self.dlg.csv_file_output.filePath() == '':
+            self.iface.messageBar().pushMessage("Error: ", "Please select a folder path", level=Qgis.Critical, duration=6)
+            return 
+        # create csv file based on
+        name = self.dlg.csv_name.text() 
+        folder_path = self.dlg.csv_file_output.filePath()
+        file_path = folder_path + '/'+ name + '.csv'
+
+        # grab the layer you would like to save
+        layers = self.refresh_layers() 
+        layer_out = layers[self.dlg.layer_save.currentIndex()] 
+
+        # this grabs the field names...
+        fields = [field.name() for field in layer_out.fields()] # fields on the selected layer
+        
+        # FIXME: currently currently it is just saving the csv file
+        with open(file_path, 'a') as name:
+            wr = csv.writer(name, quoting=csv.QUOTE_ALL)
+            wr.writerow(fields)
+
+            features = layer_out.getFeatures()
+            for feature in features:
+                attrs = feature.attributes()
+                wr.writerow(attrs)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -853,40 +842,39 @@ class Smarty:
             settings = QtCore.QSettings()
 
             # Check if global settings variable is set?
-            # if settings.getValue('auth_id') != None:
-            #     self.dlg.auth_id.setText(settings.getValue('auth_id'))
-            # if settings.getValue('auth_token') != None:
-            #     self.dlg.auth_token.setText(settings.getValue('auth_token'))
+            # if settings.value('auth_id') != None:
+            self.dlg.auth_id.setText(settings.value('auth_id'))
+            # if settings.value('auth_token') != None:
+            self.dlg.auth_token.setText(settings.value('auth_token'))
 
             # Disable sections of dialogue box
             self.dlg.frame.setDisabled(True)
             self.dlg.add_csv.setDisabled(True)
             self.dlg.batch_id.setDisabled(True)
-            self.dlg.id_box.stateChanged.connect(self.enable_id_box)
+            self.dlg.id_box.stateChanged.connect(self.enable_id_box) # I THINK THIS IS CREATING DUPLICATE ROWS IN THE COLUMNS
                 
             # Listen for clicked buttons
             self.dlg.pushButton.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
-            self.dlg.meta_data.clicked.connect(self.meta_resize)
+            self.dlg.meta_data.clicked.connect(self.meta_resize) # TODO: if the state changes then do something?
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
-            self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
+            # self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
-            self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
+            # self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
+            self.dlg.save_csv.clicked.connect(self.output_csv)
 
             if self.dlg.csv_file.fileChanged: # I DON'T THINK THIS IS DOING ANYTHING
                 #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
                 self.dlg.add_csv.setEnabled(True)
 
-            self.dlg.add_csv.clicked.connect(self.add_csv)
+            self.dlg.add_csv.clicked.connect(self.add_csv) # TODO: WE NEED TO MAKE SURE THAT THEY CAN'T ADD THE COLUMNS AGAIN TO THE DROP DOWNS
 
             # Add authentication information
-            # if self.settings.value('auth_id') == "":
-                ############################## THIS IS GETTING HIT EVERYTIME WE OPEN THE PLUGIN... SO WE NEED TO THINK ABOUT HOW TO STORE IT ACROSS SESSIONS... MAYBE NOT IN THIS FILE...
-                # self.iface.messageBar().pushMessage("NILL AUTH_ID IN SETTINGS: ", "auth_id is nil", level=Qgis.Critical, duration=6)
-            self.dlg.add_tokens.clicked.connect(self.add_tokens)
+            # getting hit everytime we open the plugin
+            self.dlg.add_tokens.clicked.connect(self.add_tokens) # TODO: IF THE TOKENS ARE STORED THAN ENABLE THE BOX?
 
             # Fill drop downs
             self.refresh_layers()
@@ -896,7 +884,8 @@ class Smarty:
             self.dlg.meta_data_results.setVisible(False)
             self.dlg.results.setVisible(False)
             self.dlg.stacked_widget.setVisible(False)
-            self.dlg.stacked_widget_batch.setVisible(False)
+            self.dlg.csv_output_frame.setVisible(False)
+            # self.dlg.stacked_widget_batch.setVisible(False)
 
             # Autocompleter listener
             self.dlg.single_address_lookup.textEdited.connect(self.autocomplete)
