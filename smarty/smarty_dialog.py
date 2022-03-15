@@ -57,7 +57,7 @@ class SmartyDialog(QtWidgets.QDialog, FORM_CLASS):
 
         #TODO: Should we add a QFrame so that it looks a little better?
         
-        message = QLabel("Information currently is contained on a temporary memory layer. Please make your layer permanent before you close QGIS.", self.save_dlg)
+        message = QLabel("Geocoding inofrmation is currently contained on a temporary memory layer. Please make your layer permanent before you close QGIS.", self.save_dlg)
         message.setGeometry(20,20, 200, 100)
         message.setWordWrap(True)
 

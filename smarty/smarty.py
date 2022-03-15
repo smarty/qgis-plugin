@@ -50,7 +50,7 @@ import pandas as pd
 import webbrowser
 import csv
 import time
-import thread
+# import thread
 
 class Smarty:
     """QGIS Plugin Implementation."""
@@ -214,7 +214,8 @@ class Smarty:
 
 
     def smarty_single(self):
-        ######################################################### build client and grab results
+        self.dlg.meta_data.setChecked(False)
+
         auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b"
         auth_token = "nD3IIoyZ3H4LSzNp6qpl"
 
@@ -272,10 +273,11 @@ class Smarty:
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             layer_name,
             "memory") 
-        else:
-            ########### TODO: I THINK WE NEED TO TAKE THE SELECTED LAYER, NOT CREATE A NEW ONE *PALM IN FACE
+        elif self.dlg.new_layer_radio.isChecked():
             layers = self.refresh_layers()
             layer_out = layers[self.dlg.layer_box.currentIndex()] 
+ 
+        self.refresh_layers()
         
         ############################################################################################################################
 
@@ -296,7 +298,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(627,613)
+        self.dlg.resize(627,586)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -377,22 +379,26 @@ class Smarty:
 
     def smarty_batch(self):
         start = time.time()
+        
+        if self.dlg.csv_file_output.filePath() == '':
+            self.iface.messageBar().pushMessage("Error: ", "Please select an output file", level=Qgis.Critical, duration=6)
+            return
+        elif self.dlg.csv_file.filePath() == '':
+            self.iface.messageBar().pushMessage("Error: ", "Please select a CSV file to process", level=Qgis.Critical, duration=6)
+            return
 
         df = pd.read_csv(self.dlg.csv_file.filePath())
 
         if self.dlg.id_box.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
         else:
-            id_column_name = 'id'
-            df.insert(0,'id',range(0,0 + len(df)))
+            id_column_name = 'ID'
+            df.insert(0,'ID',range(0,0 + len(df))) # TODO THIS IS NOT WORKING... THERE IS PROBABLY A BETTER WAY TO DO THIS WITH THE LOOPS WE ALREADY HAVE?
 
         address = self.dlg.batch_address.currentText()
         city = self.dlg.batch_city.currentText()
         state = self.dlg.batch_state.currentText()
         zip = self.dlg.batch_zip.currentText()
-
-        message = address + city + state + zip
-        self.iface.messageBar().pushMessage("Error: ", message, level=Qgis.Critical, duration=6)
 
         add_df = df[[id_column_name, address, city, state, zip]].copy()
 
@@ -405,10 +411,8 @@ class Smarty:
             'Smarty',
             "memory") 
         else:
-            layer_name = self.dlg.layer_name_batch.text()
-            
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            layer_name,
+            self.dlg.layer_name_batch.text(),
             "memory") 
         # else:
         #     layers = self.refresh_layers()
@@ -423,7 +427,6 @@ class Smarty:
 
         credentials = StaticCredentials(auth_id, auth_token)
 
-        # Build client
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
         batch = Batch()
 
@@ -437,13 +440,8 @@ class Smarty:
             batch[counter].match = 'enhanced'
 
             counter += 1
-
-            # TODO: We would want to start a new thread right here
             
             if batch.is_full():
-                # how do we reset the batch?
-
-                thread.start_new_thread() # I think it needs a function and then in parens the parameters it takes
                 try:
                     client.send_batch(batch)
                 except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
@@ -457,7 +455,7 @@ class Smarty:
 
                     if len(candidates) == 0:
                         self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
-                        non_validated.append(lookup) # TODO: What should I do with these addresses?
+                        non_validated.append(lookup) # TODO: What should I do with these addresses? Maybe we think about setting the attributes with nulls and what they originally gave us?
                         continue
                     
                     candidates = lookup.result
@@ -492,9 +490,8 @@ class Smarty:
                         label = str(df.at[i,self.dlg.batch_point_label.currentText()])
                         layer_out = self.set_label_batch(layer_out)
                     
-
                     id = str(df.at[i,id_column_name])
-                    
+
                     feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
                             county_fips, rdi, cong_dist, time_zone, dst, label])
 
@@ -506,10 +503,13 @@ class Smarty:
                     layer_out.updateExtents()
 
                 batch.clear()
-            counter = 0
+                counter = 0
+            # if i == len(df) - 1:
+                # Then possibly make a smarty_batch_process function that it calls?
+            # TODO: I think we need to check to see if the batch still has something on it even if it isn't full
         
         project.addMapLayer(layer_out)
-        self.save_csv_resize()
+        self.output_csv(layer_out)
 
 
         end = time.time()
@@ -572,10 +572,6 @@ class Smarty:
             self.dlg.resize(627,586)
             self.dlg.meta_data_results.setVisible(False)
     
-    def save_csv_resize(self):
-        self.dlg.csv_output_frame.setVisible(True)
-        self.dlg.resize(627, 773)
-    
     def refresh_layers(self):
         layers = QgsProject.instance().layerTreeRoot().children()
 
@@ -600,9 +596,6 @@ class Smarty:
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
-
-        self.dlg.layer_save.clear()
-        self.dlg.layer_save.addItems([layer.name() for layer in layers_list])
 
         # self.dlg.layer_box_batch.clear()
         # self.dlg.layer_box_batch.addItems([layer.name() for layer in layers_list])
@@ -744,11 +737,21 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(627,540)
+            self.dlg.resize(627,683)
         else:
             self.dlg.resize(627,390)
     
     def add_csv(self):
+        if len(self.dlg.csv_file.filePath()) != 0 and self.dlg.batch_address.currentText != '': # This is so if they have a new csv it will reset the drop downs
+            self.dlg.id_box.setChecked(False)
+            self.dlg.batch_id.clear()
+            self.dlg.batch_address.clear()
+            self.dlg.batch_city.clear()
+            self.dlg.batch_state.clear()
+            self.dlg.batch_zip.clear()
+            self.dlg.batch_point_label.clear()
+
+
         if len(self.dlg.csv_file.filePath()) == 0:
             self.iface.messageBar().pushMessage("Error: ", "Please select a file path", level=Qgis.Critical, duration=6)
             return 
@@ -803,23 +806,22 @@ class Smarty:
             return "ambiguous_address"
         return "MAJOR ERROR"
 
-    def output_csv(self):
+    def output_csv(self, layer_out):
         if self.dlg.csv_file_output.filePath() == '':
             self.iface.messageBar().pushMessage("Error: ", "Please select a folder path", level=Qgis.Critical, duration=6)
             return 
-        # create csv file based on
-        name = self.dlg.csv_name.text() 
-        folder_path = self.dlg.csv_file_output.filePath()
-        file_path = folder_path + '/'+ name + '.csv'
 
-        # grab the layer you would like to save
-        layers = self.refresh_layers() 
-        layer_out = layers[self.dlg.layer_save.currentIndex()] 
+        # TODO: check for .csv on the end 
+        folder_path = self.dlg.csv_file_output.filePath()
+        if folder_path[-4:] != '.csv': 
+            file_path = folder_path + '.csv'
+
+        # TODO: send the layer as parameter?
 
         # this grabs the field names...
         fields = [field.name() for field in layer_out.fields()] # fields on the selected layer
         
-        # FIXME: currently currently it is just saving the csv file
+        # FIXME: currently it is just saving the csv file
         with open(file_path, 'a') as name:
             wr = csv.writer(name, quoting=csv.QUOTE_ALL)
             wr.writerow(fields)
@@ -841,39 +843,35 @@ class Smarty:
             # Create a global settings variable         
             settings = QtCore.QSettings()
 
-            # Check if global settings variable is set?
-            # if settings.value('auth_id') != None:
+            # Set the global variables to the text of the auth_id and auth_token
             self.dlg.auth_id.setText(settings.value('auth_id'))
-            # if settings.value('auth_token') != None:
             self.dlg.auth_token.setText(settings.value('auth_token'))
 
             # Disable sections of dialogue box
-            self.dlg.frame.setDisabled(True)
+            if len(self.dlg.auth_id.text()) == 0:
+                self.dlg.frame.setDisabled(True)
             self.dlg.add_csv.setDisabled(True)
             self.dlg.batch_id.setDisabled(True)
             self.dlg.id_box.stateChanged.connect(self.enable_id_box) # I THINK THIS IS CREATING DUPLICATE ROWS IN THE COLUMNS
                 
             # Listen for clicked buttons
-            self.dlg.pushButton.clicked.connect(self.smarty_single)
+            self.dlg.single_lookup.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
             self.dlg.meta_data.clicked.connect(self.meta_resize) # TODO: if the state changes then do something?
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
-            # self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
-            # self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
-            self.dlg.save_csv.clicked.connect(self.output_csv)
+            self.dlg.add_csv.clicked.connect(self.add_csv)
+            # self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
+            # self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
+            # TODO: put the output_csv --> in the batch lookup
 
             if self.dlg.csv_file.fileChanged: # I DON'T THINK THIS IS DOING ANYTHING
-                #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
-                self.dlg.add_csv.setEnabled(True)
-
-            self.dlg.add_csv.clicked.connect(self.add_csv) # TODO: WE NEED TO MAKE SURE THAT THEY CAN'T ADD THE COLUMNS AGAIN TO THE DROP DOWNS
+                self.dlg.add_csv.setEnabled(True) #TODO: DISABLE BUTTONS UNTIL CSV IS CHOSEN - THEN MAYBE CONSIDER DOING ERROR HANDLING
 
             # Add authentication information
-            # getting hit everytime we open the plugin
             self.dlg.add_tokens.clicked.connect(self.add_tokens) # TODO: IF THE TOKENS ARE STORED THAN ENABLE THE BOX?
 
             # Fill drop downs
@@ -884,13 +882,11 @@ class Smarty:
             self.dlg.meta_data_results.setVisible(False)
             self.dlg.results.setVisible(False)
             self.dlg.stacked_widget.setVisible(False)
-            self.dlg.csv_output_frame.setVisible(False)
             # self.dlg.stacked_widget_batch.setVisible(False)
 
             # Autocompleter listener
             self.dlg.single_address_lookup.textEdited.connect(self.autocomplete)
          
-
             # Resize Dialog box for batch lookups
             self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
 
