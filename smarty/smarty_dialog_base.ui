@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>618</width>
-    <height>778</height>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1186,7 +1186,7 @@
          <attribute name="title">
           <string>CSV File</string>
          </attribute>
-         <widget class="QgsFileWidget" name="csv_file" native="true">
+         <widget class="QgsFileWidget" name="csv_file">
           <property name="geometry">
            <rect>
             <x>20</x>
@@ -1375,7 +1375,7 @@
            <string>reset</string>
           </property>
          </widget>
-         <widget class="QgsFileWidget" name="csv_file_output" native="true">
+         <widget class="QgsFileWidget" name="csv_file_output">
           <property name="geometry">
            <rect>
             <x>20</x>

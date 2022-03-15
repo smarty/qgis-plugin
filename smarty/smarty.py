@@ -273,7 +273,8 @@ class Smarty:
             layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
             layer_name,
             "memory") 
-        elif self.dlg.new_layer_radio.isChecked():
+
+        elif self.dlg.existing_layer_radio.isChecked():
             layers = self.refresh_layers()
             layer_out = layers[self.dlg.layer_box.currentIndex()] 
  
@@ -298,7 +299,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(627,778)
+        self.dlg.resize(627,645)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -572,20 +573,29 @@ class Smarty:
 
         layers = QgsProject.instance().mapLayers().values()
 
-        for layer in layers:
+        for layer in layers: 
             if layer.type() == QgsMapLayer.VectorLayer: # you can also compare layer.type() == 0 (means it's a vectorlayer)
                 
                 attributeTableConfig = layer.attributeTableConfig()
 
+                # TODO: this might not work... it would probably throw an error... 
+                # this is for the batch ones... it has an ID on it
                 temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 "Smarty",
                 "memory") 
                 temp_attributeTableConfig = temp_layer.attributeTableConfig()
 
+                # this is for the single lookups... it does not have an ID on it... 
+                temp_layer2 = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+                "Smarty",
+                "memory") 
+                temp_attributeTableConfig2 = temp_layer2.attributeTableConfig()
+
                 if attributeTableConfig.hasSameColumns(temp_attributeTableConfig):
                     layers_list.append(layer)
 
-                layers_list.append( layer )
+                elif attributeTableConfig.hasSameColumns(temp_attributeTableConfig2):
+                    layers_list.append( layer )
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
@@ -730,7 +740,7 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(627,683)
+            self.dlg.resize(627,609)
         else:
             self.dlg.resize(627,390)
     
