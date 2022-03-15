@@ -1384,6 +1384,9 @@
             <height>51</height>
            </rect>
           </property>
+          <property name="storageMode">
+           <enum>QgsFileWidget::SaveFile</enum>
+          </property>
          </widget>
          <widget class="QLabel" name="label_14">
           <property name="geometry">

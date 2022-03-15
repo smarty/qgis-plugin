@@ -86,6 +86,7 @@ class Smarty:
             'Smarty_{}.qm'.format(locale))
         
         self.settings = QSettings()
+        self.counter2 = 0
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -425,7 +426,7 @@ class Smarty:
         batch = Batch()
 
         counter = 0
-        for i, row in add_df.iterrows():
+        for _, row in add_df.iterrows():
             batch.add(StreetLookup())
             batch[counter].street = row[address] # so on the 101th round it is trying to put the address in the batch?
             batch[counter].city = row[city]
@@ -436,79 +437,86 @@ class Smarty:
             counter += 1
             
             if batch.is_full():
-                try:
-                    client.send_batch(batch)
-                except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
-                    self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
-                    return
-                
-                non_validated = []
-                for _, lookup in enumerate(batch):
-
-                    candidates = lookup.result
-
-                    if len(candidates) == 0:
-                        self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
-                        non_validated.append(lookup) # TODO: What should I do with these addresses? Maybe we think about setting the attributes with nulls and what they originally gave us?
-                        continue
-                    
-                    candidates = lookup.result
-                    candidate = candidates[0]
-
-                    longitude = candidate.metadata.longitude
-                    latitude = candidate.metadata.latitude
-                    address_result = self.set_address(candidate)
-                    longitude = candidate.metadata.longitude
-                    latitude = candidate.metadata.latitude
-
-                    city_result = candidate.components.city_name
-                    state_result = candidate.components.state_abbreviation
-                    zip_result = candidate.components.zipcode
-                    zip_4 = candidate.components.plus4_code
-
-                    precision = candidate.metadata.precision
-                    county = candidate.metadata.county_name
-                    county_fips = candidate.metadata.county_fips
-                    rdi = candidate.metadata.rdi
-                    cong_dist = candidate.metadata.congressional_district
-                    time_zone = candidate.metadata.time_zone
-                    dst = candidate.metadata.obeys_dst
-
-                    point_out = QgsPointXY(longitude, latitude)
-                    feature = QgsFeature()
-                    feature.setGeometry(QgsGeometry.fromPointXY(point_out))
-
-                    if self.dlg.batch_point_label.currentText() == 'None':
-                        label = ''
-                    else:
-                        label = str(df.at[i,self.dlg.batch_point_label.currentText()])
-                        layer_out = self.set_label_batch(layer_out)
-                    
-                    id = str(df.at[i,id_column_name])
-
-                    feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
-                            county_fips, rdi, cong_dist, time_zone, dst, label])
-
-                    symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
-                    
-                    layer_out.dataProvider().addFeature(feature)
-                    layer_out.renderer().setSymbol(symbol)
-                    
-                    layer_out.updateExtents()
-
+                self.process_batch(df, id_column_name, layer_out, client, batch, self.counter2)
                 batch.clear()
                 counter = 0
-            # if i == len(df) - 1:
-                # Then possibly make a smarty_batch_process function that it calls?
-            # TODO: I think we need to check to see if the batch still has something on it even if it isn't full
+        
+        if len(batch) != 0:
+            self.process_batch(df, id_column_name, layer_out, client, batch, self.counter2)
         
         project.addMapLayer(layer_out)
         self.output_csv(layer_out)
 
+        self.refresh_layers()
 
         end = time.time()
         batch_time = (end - start)
         self.iface.messageBar().pushMessage("Batch ran in the following time: ", str(batch_time), level=Qgis.Critical, duration=6)
+
+    def process_batch(self, df, id_column_name, layer_out, client, batch, counter2):
+        try:
+            client.send_batch(batch)
+        except exceptions.SmartyException as err: # check for a 401 error --> means they dont have correct credentials
+            self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
+            return
+                
+        non_validated = []
+        for i, lookup in enumerate(batch):
+            candidates = lookup.result
+
+            if len(candidates) == 0:
+                self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
+                non_validated.append(lookup) # TODO: What should I do with these addresses? Maybe we think about setting the attributes with nulls and what they originally gave us?
+                continue
+                    
+            candidates = lookup.result
+            candidate = candidates[0]
+
+            longitude = candidate.metadata.longitude
+            latitude = candidate.metadata.latitude
+            address_result = self.set_address(candidate)
+            longitude = candidate.metadata.longitude
+            latitude = candidate.metadata.latitude
+
+            city_result = candidate.components.city_name
+            state_result = candidate.components.state_abbreviation
+            zip_result = candidate.components.zipcode
+            zip_4 = candidate.components.plus4_code
+
+            precision = candidate.metadata.precision
+            county = candidate.metadata.county_name
+            county_fips = candidate.metadata.county_fips
+            rdi = candidate.metadata.rdi
+            cong_dist = candidate.metadata.congressional_district
+            time_zone = candidate.metadata.time_zone
+            dst = candidate.metadata.obeys_dst
+
+            point_out = QgsPointXY(longitude, latitude)
+            feature = QgsFeature()
+            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+
+            if self.dlg.batch_point_label.currentText() == 'None':
+                label = ''
+            else:
+                label = str(df.at[i,self.dlg.batch_point_label.currentText()])
+                layer_out = self.set_label_batch(layer_out)
+
+            if self.dlg.id_box.isChecked() == False:
+                self.counter2 += 1 
+                id = self.counter2
+            else: 
+                id = str(df.at[i,id_column_name])
+
+            feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
+                            county_fips, rdi, cong_dist, time_zone, dst, label])
+
+            symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
+                    
+            layer_out.dataProvider().addFeature(feature)
+            layer_out.renderer().setSymbol(symbol)
+                    
+            layer_out.updateExtents()
+        return layer_out
         
         # TODO: output a list of the validated and non validated addresses?
 
@@ -578,7 +586,7 @@ class Smarty:
                 
                 attributeTableConfig = layer.attributeTableConfig()
 
-                # TODO: this might not work... it would probably throw an error... 
+                # TODO: this might not work... it would probably throw an error... maybe we just set id to 0 for single?
                 # this is for the batch ones... it has an ID on it
                 temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 "Smarty",
@@ -706,10 +714,16 @@ class Smarty:
 
             suggestion_list = []
             for suggestion in lookup.result:
+
+                if suggestion.entries != 0:
+                    entry = ' (' + str(suggestion.entries) + ' entries)'
+                else:
+                    entry = ''
+                address = suggestion.street_line + " " + suggestion.secondary + entry + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
+                suggestion_list.append(address)
+
                 if len(suggestion_list) == 5:
                     break
-                address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
-                suggestion_list.append(address)
 
             # Set completer object and connect it to the lineEdit
             self.autocomplete_model = QStandardItemModel()
