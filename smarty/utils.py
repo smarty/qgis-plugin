@@ -1,49 +1,27 @@
 class Utils:
     @staticmethod
-    def is_ambiguous(result):
-        return len(result) > 1
+    def handle_success(result):
+        if len(result) == 0 or Utils.is_invalid(result[0].analysis):
+            return "No Match - The address is invalid."
+        if result[0].metadata.zip_type == "POBox":
+            return "No Match - PO Box Only. The ZIP Code is PO Box delivery only."
+        return Utils.verify_results(result[0].analysis)
 
     @staticmethod
     def is_invalid(result):
-        if len(result) == 0 or not result[0].analysis:  # TODO: watchme...
+        if result is None:
             return True
+        if result.enhanced_match == "none":
+            return True
+        return False
 
-        dpv_match_code = result[0].analysis.dpv_match_code
-
-        exactly_one_result = (len(result) == 1)
-        dpv_match_code_is_none = (dpv_match_code == "N")
-        address_is_confirmed_in_some_way = dpv_match_code != "N"
-
-        if exactly_one_result:
-            if result[0].analysis.enhanced_match:
-                enhanced_match = result[0].analysis.enhanced_match.split(",")
-                return enhanced_match.find("none") != -1
-            elif dpv_match_code_is_none:
-                return True
-            else:
-                return not address_is_confirmed_in_some_way
+    @staticmethod
+    def verify_results(result):
+        if result.vacant == "Y":
+            return "Match-Vacant - The address is valid but vacant."
+        if result.active == "N":
+            return "Match-Inactive - The address is valid but inactive."
+        if result.enhanced_match == "non-postal-match":
+            return "Match-Non-Postal - A match was made to a valid non-postal address."
         else:
-            return False
-
-    @staticmethod
-    def is_missing_secondary(result):
-        if len(result) == 0:  # There were no results
-            return False
-
-        enhanced_matching_response = result[0].analysis.enhanced_match
-
-        if enhanced_matching_response:
-            has_missing_secondary = enhanced_matching_response.find("missing-secondary")
-            has_unknown_secondary = enhanced_matching_response.find("unknown-secondary")
-
-            return has_missing_secondary != -1 or has_unknown_secondary != -1
-
-        n1_dpv_footnote_present = result[0].analysis.dpvFootnotes.find("N1") != -1
-        r1_dpv_footnote_present = result[0].analysis.dpvFootnotes.find("R1") != -1
-        h_sharp_footnote_present = result[0].analysis.footnotes.find("H#") != -1
-
-        return n1_dpv_footnote_present or r1_dpv_footnote_present or h_sharp_footnote_present
-
-    @staticmethod
-    def is_valid(result):
-        return not Utils.is_invalid(result)
+            return "Valid Match - A valid match was made to a postal address."

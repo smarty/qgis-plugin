@@ -243,7 +243,7 @@ class Smarty:
 
         result = lookup.result
 
-        success = self.handle_success(result)
+        success = Utils.handle_success(result)
 
         if success == "No Match. The address is invalid.":
             self.dlg.resize(627, 586)
@@ -298,7 +298,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(627,586)
+        self.dlg.resize(627,778)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -369,13 +369,6 @@ class Smarty:
         self.refresh_layers()
 
         layer_out.commitChanges()
-    def handle_success(self, result):
-        if len(result) == 0 or Utils.is_invalid(result[0].analysis):
-            return "No Match - The address is invalid."
-        if result[0].metadata.zip_type == "POBox":
-            return "No Match - PO Box Only. The ZIP Code is PO Box delivery only."
-        return Utils.verify_results(result[0].analysis)
-
 
     def smarty_batch(self):
         start = time.time()
