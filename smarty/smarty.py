@@ -518,6 +518,9 @@ class Smarty:
     def smarty_home_link(self):
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
 
+    def smarty_help_link(self):
+        webbrowser.open("https://www.smarty.com/docs/sdk/python")
+
     def set_symbol(self, color, symbol, size):
         if size == 0:
             size = '10'
@@ -862,6 +865,7 @@ class Smarty:
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
+            self.dlg.smarty_link_help.clicked.connect(self.smarty_help_link)
             self.dlg.meta_data.clicked.connect(self.meta_resize) # TODO: if the state changes then do something?
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
