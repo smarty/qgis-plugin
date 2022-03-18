@@ -310,7 +310,7 @@ class Smarty:
         success = Utils.handle_success(result)
 
         if success == "No Match. The address is invalid.":
-            self.dlg.resize(627, 586)
+            self.dlg.resize(531, 532)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
             self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
@@ -363,7 +363,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(627,645)
+        self.dlg.resize(531,749)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -637,10 +637,10 @@ class Smarty:
     
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(627,767)
+            self.dlg.resize(531,985)
             self.dlg.meta_data_results.setVisible(True)
         else:
-            self.dlg.resize(627,645)
+            self.dlg.resize(531,753)
             self.dlg.meta_data_results.setVisible(False)
     
     def refresh_layers(self):
@@ -965,6 +965,7 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
+            self.dlg.resize(531, 461)
 
             # Create a global settings variable         
             settings = QtCore.QSettings()
@@ -983,9 +984,8 @@ class Smarty:
             # Listen for clicked buttons
             self.dlg.single_lookup.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
-            self.dlg.smarty_link_1.clicked.connect(self.smarty_home_link)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
-            self.dlg.smarty_link_help.clicked.connect(self.smarty_help_link)
+            self.dlg.smarty_link_help.clicked.connect(self.smarty_home_link)
             self.dlg.meta_data.clicked.connect(self.meta_resize) # TODO: if the state changes then do something?
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
