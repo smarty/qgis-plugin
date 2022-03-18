@@ -21,8 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
+from calendar import c
 from itertools import count
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QStringListModel
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
@@ -52,6 +53,75 @@ import csv
 import time
 # import thread
 
+    
+class c(QCompleter):
+
+    def __init__(self, smarty, parent=None):
+        super().__init__(parent)
+        self.smarty = smarty
+        self.text = ''
+
+    def pathFromIndex(self, index): # cuz we don't know where it is getting called so we cant send it other things 
+
+        self.smarty.iface.messageBar().pushMessage("We selected an address: ", "-----------------" , level=Qgis.Critical, duration=6)
+        self.text = str(index.data(role=2))
+        
+        if self.text.find('entries') != -1: 
+            found = found = self.text.find('(')
+            QTimer.singleShot(10000, self.auto)
+
+    # setTime = QTimer()
+    # setTime.setSingleShot(True)
+    # setTime.setInterval(1)
+    # setTime.start()
+    # setTime.timeout.connect(self.log)
+    # setTime.singleShot(10, self.smarty.dlg.single_address_lookup.show)
+        
+        return str(self.text[:found])
+    def log(self):
+        self.smarty.iface.messageBar().pushMessage("asdkjhfa", "alsdkjf", level=Qgis.Critical, duration=6)
+    
+    def auto(self):
+        if self.text.find('entries') != -1: 
+            self.smarty.iface.messageBar().pushMessage("We selected an address - it does contain (entries) ", self.text, level=Qgis.Critical, duration=6)
+            key = "90464575666784311"
+            hostname = "qgis"
+
+            credentials = SharedCredentials(key, hostname)
+
+            client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
+            self.smarty.iface.messageBar().pushMessage("We selected an address ", self.text, level=Qgis.Critical, duration=6)
+            
+            found = self.text.find('(')
+            search = self.text.replace(' entries)', ')')
+            lookup = AutocompleteProLookup()
+            lookup.search = self.text[:found]
+            lookup.selected = search
+            
+            client.send(lookup) 
+
+            suggestion_list = []
+            for suggestion in lookup.result:
+
+                address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
+                suggestion_list.append(address)
+
+
+            # Set completer object and connect it to the lineEdit
+            self.smarty.autocomplete_model = QStandardItemModel()
+            for text in suggestion_list:
+                self.smarty.autocomplete_model.appendRow(QStandardItem(text))
+
+            self.smarty.completer.setModel(self.smarty.autocomplete_model)
+            self.smarty.dlg.single_address_lookup.setCompleter(self.smarty.completer)
+            self.smarty.iface.messageBar().pushMessage("completion count ", str(self.smarty.completer.completionCount()), level=Qgis.Critical, duration=6)
+        
+        else: 
+            self.smarty.iface.messageBar().pushMessage("We selected an address - it does not contain (entries) ", self.text, level=Qgis.Critical, duration=6)
+        
+            return self.text # TODO: GO DELETE THE OTHER FUNCTION?
+        return
+
 class Smarty:
     """QGIS Plugin Implementation."""
 
@@ -72,8 +142,11 @@ class Smarty:
         """
         # I added this... 
 
-        self.completer = QCompleter(caseSensitivity=QtCore.Qt.CaseInsensitive)
+        # self.completer = QCompleter(caseSensitivity=QtCore.Qt.CaseInsensitive)
+        self.completer = c(self)
         self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self.completer.setMaxVisibleItems(100)
+
         # Save reference to the QGIS interface
         self.iface = iface
         # initialize plugin directory
@@ -212,7 +285,6 @@ class Smarty:
                 self.tr(u'&Smarty'),
                 action)
             self.iface.removeToolBarIcon(action)
-
 
     def smarty_single(self):
         self.dlg.meta_data.setChecked(False)
@@ -371,6 +443,8 @@ class Smarty:
         self.refresh_layers()
 
         layer_out.commitChanges()
+
+        self.dlg.point_label.setText('')
 
     def smarty_batch(self):
         start = time.time()
@@ -574,7 +648,7 @@ class Smarty:
             self.dlg.resize(627,767)
             self.dlg.meta_data_results.setVisible(True)
         else:
-            self.dlg.resize(627,586)
+            self.dlg.resize(627,645)
             self.dlg.meta_data_results.setVisible(False)
     
     def refresh_layers(self):
@@ -700,16 +774,15 @@ class Smarty:
         return layer_out
     
     def autocomplete(self):
+        key = "90464575666784311"
+        hostname = "qgis"
+
+        credentials = SharedCredentials(key, hostname)
+
+        client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
         text = self.dlg.single_address_lookup.text()
         
         if len(text) > 0 :
-
-            key = "90464575666784311"
-            hostname = "qgis"
-
-            credentials = SharedCredentials(key, hostname)
-
-            client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
             
             lookup = AutocompleteProLookup(text) 
             
@@ -725,8 +798,45 @@ class Smarty:
                 address = suggestion.street_line + " " + suggestion.secondary + entry + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
                 suggestion_list.append(address)
 
-                if len(suggestion_list) == 5:
-                    break
+                # if len(suggestion_list) == 5: # or use setMaxVisibleItems to 5
+                #     break
+
+            self.autocomplete_model = QStandardItemModel()
+            for text in suggestion_list:
+                self.autocomplete_model.appendRow(QStandardItem(text))
+
+            self.completer.setModel(self.autocomplete_model)
+            self.dlg.single_address_lookup.setCompleter(self.completer)
+
+            # Set completer object and connect it to the lineEdit
+        else:
+            return
+    
+    def autocomplete_apt(self):
+        self.iface.messageBar().pushMessage("We selected an address ", "and got into the function", level=Qgis.Critical, duration=6)
+        key = "90464575666784311"
+        hostname = "qgis"
+
+        credentials = SharedCredentials(key, hostname)
+
+        client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
+        text = self.dlg.single_address_lookup.text()
+
+        if text.find('entries') != -1: 
+            
+            found = text.find('(')
+            search = text.replace(' entries)', ')')
+            lookup = AutocompleteProLookup()
+            lookup.search = text[:found]
+            lookup.selected = search
+            
+            client.send(lookup) 
+
+            suggestion_list = []
+            for suggestion in lookup.result:
+
+                address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
+                suggestion_list.append(address)
 
             # Set completer object and connect it to the lineEdit
             self.autocomplete_model = QStandardItemModel()
@@ -735,11 +845,9 @@ class Smarty:
 
             self.completer.setModel(self.autocomplete_model)
             self.dlg.single_address_lookup.setCompleter(self.completer)
-            self.dlg.single_address_lookup.show()
-
-            # TODO: MAYBE FIGURE OUT HOW TO DO THE FILTERING? -> from the SDK
 
         else:
+            self.iface.messageBar().pushMessage("We selected an address: ", "but it did not contain entries", level=Qgis.Critical, duration=6)
             return
     
     def set_address(self, candidate):
@@ -905,9 +1013,11 @@ class Smarty:
             self.dlg.stacked_widget.setVisible(False)
             # self.dlg.stacked_widget_batch.setVisible(False)
 
+            # wait for user to make a selection
+            # self.completer.activated.connect(self.autocomplete_apt)
             # Autocompleter listener
             self.dlg.single_address_lookup.textEdited.connect(self.autocomplete)
-         
+            
             # Resize Dialog box for batch lookups
             self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
 

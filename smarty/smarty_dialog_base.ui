@@ -32,7 +32,7 @@
       <widget class="QPushButton" name="single_lookup">
        <property name="geometry">
         <rect>
-         <x>190</x>
+         <x>220</x>
          <y>290</y>
          <width>361</width>
          <height>41</height>
@@ -150,9 +150,12 @@
           <rect>
            <x>100</x>
            <y>40</y>
-           <width>411</width>
+           <width>441</width>
            <height>21</height>
           </rect>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
          </property>
         </widget>
        </widget>
@@ -906,7 +909,7 @@
       <widget class="QPushButton" name="smarty_link_1">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>20</x>
          <y>290</y>
          <width>171</width>
          <height>41</height>
