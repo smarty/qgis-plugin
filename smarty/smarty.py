@@ -23,7 +23,7 @@
 """
 from calendar import c
 from itertools import count
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QUrlQuery, QTimer
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
@@ -32,7 +32,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
                        QgsFeature, QgsMarkerSymbol, QgsNetworkAccessManager, QgsNetworkReplyContent, Qgis, 
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling,
-                        QgsMapLayer, QgsFeatureRequest)
+                        QgsMapLayer)
 
 #########
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
@@ -61,65 +61,50 @@ class c(QCompleter):
         self.smarty = smarty
         self.text = ''
 
-    def pathFromIndex(self, index): # cuz we don't know where it is getting called so we cant send it other things 
-
-        self.smarty.iface.messageBar().pushMessage("We selected an address: ", "-----------------" , level=Qgis.Critical, duration=6)
+    def pathFromIndex(self, index): # So an idea is to piggy back off the textedited event
         self.text = str(index.data(role=2))
         
         if self.text.find('entries') != -1: 
             found = found = self.text.find('(')
-            QTimer.singleShot(10000, self.auto)
-
-    # setTime = QTimer()
-    # setTime.setSingleShot(True)
-    # setTime.setInterval(1)
-    # setTime.start()
-    # setTime.timeout.connect(self.log)
-    # setTime.singleShot(10, self.smarty.dlg.single_address_lookup.show)
+            QTimer.singleShot(0, self.auto)
         
         return str(self.text[:found])
-    def log(self):
-        self.smarty.iface.messageBar().pushMessage("asdkjhfa", "alsdkjf", level=Qgis.Critical, duration=6)
     
     def auto(self):
-        if self.text.find('entries') != -1: 
-            self.smarty.iface.messageBar().pushMessage("We selected an address - it does contain (entries) ", self.text, level=Qgis.Critical, duration=6)
-            key = "90464575666784311"
-            hostname = "qgis"
+        key = "90464575666784311"
+        hostname = "qgis"
 
-            credentials = SharedCredentials(key, hostname)
+        credentials = SharedCredentials(key, hostname)
 
-            client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
-            self.smarty.iface.messageBar().pushMessage("We selected an address ", self.text, level=Qgis.Critical, duration=6)
-            
-            found = self.text.find('(')
-            search = self.text.replace(' entries)', ')')
-            lookup = AutocompleteProLookup()
-            lookup.search = self.text[:found]
-            lookup.selected = search
-            
-            client.send(lookup) 
-
-            suggestion_list = []
-            for suggestion in lookup.result:
-
-                address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
-                suggestion_list.append(address)
-
-
-            # Set completer object and connect it to the lineEdit
-            self.smarty.autocomplete_model = QStandardItemModel()
-            for text in suggestion_list:
-                self.smarty.autocomplete_model.appendRow(QStandardItem(text))
-
-            self.smarty.completer.setModel(self.smarty.autocomplete_model)
-            self.smarty.dlg.single_address_lookup.setCompleter(self.smarty.completer)
-            self.smarty.iface.messageBar().pushMessage("completion count ", str(self.smarty.completer.completionCount()), level=Qgis.Critical, duration=6)
+        client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
+        self.smarty.iface.messageBar().pushMessage("We selected an address ", self.text, level=Qgis.Critical, duration=6)
         
-        else: 
-            self.smarty.iface.messageBar().pushMessage("We selected an address - it does not contain (entries) ", self.text, level=Qgis.Critical, duration=6)
+        # Set up api call
+        found = self.text.find('(')
+        search = self.text.replace(' entries)', ')')
+        lookup = AutocompleteProLookup()
+        lookup.search = self.text[:found]
+        lookup.selected = search
         
-            return self.text # TODO: GO DELETE THE OTHER FUNCTION?
+        # QTimer.singleShot(0, self.timer) --> send it a function that it can call
+        
+        client.send(lookup) 
+
+        # get suggestions
+        suggestion_list = []
+        for suggestion in lookup.result:
+
+            address = suggestion.street_line + " " + suggestion.secondary + " " + suggestion.city + " " + suggestion.state + " " + suggestion.zipcode
+            suggestion_list.append(address)
+
+        # Set completer object and connect it to the lineEdit
+        self.smarty.autocomplete_model = QStandardItemModel()
+        for text in suggestion_list:
+            self.smarty.autocomplete_model.appendRow(QStandardItem(text))
+
+        self.smarty.completer.setModel(self.smarty.autocomplete_model)
+        self.smarty.dlg.single_address_lookup.setCompleter(self.smarty.completer)
+        
         return
 
 class Smarty:
@@ -143,7 +128,7 @@ class Smarty:
         # I added this... 
 
         # self.completer = QCompleter(caseSensitivity=QtCore.Qt.CaseInsensitive)
-        self.completer = c(self)
+        self.completer = QCompleter(caseSensitivity=QtCore.Qt.CaseInsensitive)
         self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         self.completer.setMaxVisibleItems(100)
 
@@ -299,15 +284,21 @@ class Smarty:
         lookup = StreetLookup()
         lookup.match = "enhanced" 
         
-        if len(self.dlg.single_address_lookup.text()) > 0:
-            lookup.street = self.dlg.single_address_lookup.text()
-        else:
+        if self.dlg.tabWidget_2.currentIndex() == 1:
+            if not len(self.dlg.street.text()) > 0:
+                self.iface.messageBar().pushMessage("ERROR ", "Please add an address" , level=Qgis.Critical, duration=6)
+                return
             lookup.street = self.dlg.street.text() 
             lookup.city = self.dlg.city.text() 
             lookup.state = self.dlg.state.text() 
             lookup.zipcode = self.dlg.zipcode.text()
             lookup.candidates = 3
-
+        else:
+            if not len(self.dlg.single_address_lookup.text()) > 0:
+                self.iface.messageBar().pushMessage("ERROR ", "Please add an address" , level=Qgis.Critical, duration=6)
+                return
+            lookup.street = self.dlg.single_address_lookup.text()
+        
         try:
             client.send_lookup(lookup)
         except exceptions.SmartyException as err:
@@ -403,7 +394,7 @@ class Smarty:
         feature.setGeometry(QgsGeometry.fromPointXY(point_out)) 
 
         if len(self.dlg.point_label.text()) == 0:
-            label = address
+            label = ''
         else:
             label = self.dlg.point_label.text() 
 
@@ -415,7 +406,8 @@ class Smarty:
         layer_out.dataProvider().addFeature(feature)
         layer_out.renderer().setSymbol(symbol)
 
-        layer_out = self.set_label_single(layer_out)
+        if label != '':
+            layer_out = self.set_label_single(layer_out)
 
         layer_out.updateExtents()
 
@@ -740,8 +732,12 @@ class Smarty:
         background_color.setFillColor(QColor('white'))
         background_color.setEnabled(True)
         text_format.setBackground(background_color )
-        text_format.setSize(19)
+        text_format.setSize(15)
         label_settings.setFormat(text_format)
+        label_settings.placement = 1
+        label_settings.quadOffset = 7
+        label_settings.xOffset = 3
+        label_settings.yOffset = 7
 
         layer_out.setLabeling(QgsVectorLayerSimpleLabeling(label_settings))
         layer_out.setLabelsEnabled(True)
@@ -781,6 +777,9 @@ class Smarty:
 
         client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
         text = self.dlg.single_address_lookup.text()
+
+        if text.find('entries') != -1: 
+            self.autocomplete_apt()
         
         if len(text) > 0 :
             
@@ -909,7 +908,6 @@ class Smarty:
             self.dlg.batch_id.setEnabled(True)
         else:
             self.dlg.batch_id.setDisabled(True)
-            self.dlg.batch_id.clear()
     
     def reset_csv(self):
 
@@ -1016,7 +1014,7 @@ class Smarty:
             # wait for user to make a selection
             # self.completer.activated.connect(self.autocomplete_apt)
             # Autocompleter listener
-            self.dlg.single_address_lookup.textEdited.connect(self.autocomplete)
+            self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             
             # Resize Dialog box for batch lookups
             self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
