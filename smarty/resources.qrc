@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/plugins/smarty" >
-        <file>icon.png</file>
+        <file>smarty-icon-gradient.png</file>
     </qresource>
 </RCC>

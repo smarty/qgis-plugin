@@ -26,7 +26,7 @@ from itertools import count
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QUrl, QTimer
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QCompleter, QFileDialog, QApplication, QWidget, QVBoxLayout, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QCompleter, QTabWidget
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
@@ -252,7 +252,7 @@ class Smarty:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/smarty/icon.png'
+        icon_path = ':/plugins/smarty/smarty-icon-gradient.png'
         self.add_action(
             icon_path,
             text=self.tr(u''),
@@ -310,7 +310,7 @@ class Smarty:
         success = Utils.handle_success(result)
 
         if success == "No Match. The address is invalid.":
-            self.dlg.resize(531, 532)
+            self.dlg.resize(586, 532)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
             self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
@@ -363,7 +363,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(531,749)
+        self.dlg.resize(586,777)
         self.dlg.results.setVisible(True)
         
         # Set up output of results
@@ -439,7 +439,7 @@ class Smarty:
         self.dlg.point_label.setText('')
 
     def smarty_batch(self):
-        start = time.time()
+        # start = time.time()
         
         if self.dlg.csv_file_output.filePath() == '':
             self.iface.messageBar().pushMessage("Error: ", "Please select an output file", level=Qgis.Critical, duration=6)
@@ -515,9 +515,8 @@ class Smarty:
 
         self.refresh_layers()
 
-        end = time.time()
-        batch_time = (end - start)
-        self.iface.messageBar().pushMessage("Batch ran in the following time: ", str(batch_time), level=Qgis.Critical, duration=6)
+        # end = time.time()
+        # batch_time = (end - start)
 
     def process_batch(self, df, id_column_name, layer_out, client, batch, counter2):
         try:
@@ -637,10 +636,10 @@ class Smarty:
     
     def meta_resize(self):
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(531,985)
+            self.dlg.resize(586,998)
             self.dlg.meta_data_results.setVisible(True)
         else:
-            self.dlg.resize(531,753)
+            self.dlg.resize(586,777)
             self.dlg.meta_data_results.setVisible(False)
     
     def refresh_layers(self):
@@ -812,7 +811,7 @@ class Smarty:
             return
     
     def autocomplete_apt(self):
-        self.iface.messageBar().pushMessage("We selected an address ", "and got into the function", level=Qgis.Critical, duration=6)
+        # self.iface.messageBar().pushMessage("We selected an address ", "and got into the function", level=Qgis.Critical, duration=6)
         key = "90464575666784311"
         hostname = "qgis"
 
@@ -846,7 +845,7 @@ class Smarty:
             self.dlg.single_address_lookup.setCompleter(self.completer)
 
         else:
-            self.iface.messageBar().pushMessage("We selected an address: ", "but it did not contain entries", level=Qgis.Critical, duration=6)
+            # self.iface.messageBar().pushMessage("We selected an address: ", "but it did not contain entries", level=Qgis.Critical, duration=6)
             return
     
     def set_address(self, candidate):
@@ -864,9 +863,9 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(627,609)
+            self.dlg.resize(623,614)
         else:
-            self.dlg.resize(627,390)
+            self.dlg.resize(586,477)
     
     def add_csv(self):
         if len(self.dlg.csv_file.filePath()) != 0 and self.dlg.batch_address.currentText != '': # This is so if they have a new csv it will reset the drop downs
@@ -965,7 +964,7 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
-            self.dlg.resize(531, 461)
+            self.dlg.resize(586, 477)
 
             # Create a global settings variable         
             settings = QtCore.QSettings()

@@ -48,7 +48,7 @@ PY_FILES = \
 
 UI_FILES = smarty_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt smarty-icon-gradient.png
 
 EXTRA_DIRS =
 
