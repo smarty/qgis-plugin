@@ -887,7 +887,7 @@ class Smarty:
     
     def resize_dialog(self):
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(623,614)
+            self.dlg.resize(586,720)
         else:
             self.dlg.resize(586,506)
     
