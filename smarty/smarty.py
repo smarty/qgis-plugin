@@ -421,7 +421,7 @@ class Smarty:
             self.dlg.existing_layer_radio.setDisabled(False)
 
     def smarty_batch(self):
-        
+
         if self.dlg.csv_file_output.filePath() == '':
             self.iface.messageBar().pushMessage("Error: ", "Please select an output file", level=Qgis.Critical, duration=6)
             return
@@ -852,10 +852,10 @@ class Smarty:
         return address
     
     def resize_dialog(self):
-        if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(623,614)
+        if self.dlg.tabWidget.currentIndex() == 0: # Batch Lookup
+            self.dlg.resize(586,720)
         else:
-            self.dlg.resize(586,506)
+            self.dlg.resize(586, 506) # Single Lookup
     
     def add_csv(self):
         if len(self.dlg.csv_file.filePath()) != 0 and self.dlg.batch_address.currentText != '': 
