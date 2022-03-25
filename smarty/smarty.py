@@ -47,6 +47,7 @@ from .smarty_dialog import SmartyDialog, SaveDialog
 from .utils import Utils
 import os.path
 import sys
+import os
 import pandas as pd
 import webbrowser
 import csv
@@ -266,6 +267,10 @@ class Smarty:
             self.iface.removeToolBarIcon(action)
 
     def smarty_single(self):
+        if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
+            self.iface.messageBar().pushMessage("ERROR ", "Please choose an existing layer or create a new one." , level=Qgis.Critical, duration=6)
+            return
+
         if self.dlg.existing_layer_radio.isChecked() and self.dlg.single_address_id.text() == '' and self.dlg.single_frame_id.isEnabled():
 
             self.iface.messageBar().pushMessage("ERROR ", "You must add an ID for this address if you want to add it to the current existing layer." , level=Qgis.Critical, duration=6)
@@ -273,8 +278,8 @@ class Smarty:
 
         self.dlg.meta_data.setChecked(False)
 
-        auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b" # FIXME: 
-        auth_token = "nD3IIoyZ3H4LSzNp6qpl"
+        auth_id = "c21cabd2-1a89-7746-e799-d35d70d7080b" # FIXME: secret key id --> change name to secret_key_id
+        auth_token = "nD3IIoyZ3H4LSzNp6qpl" # secret key token --> secret_key_token
 
         credentials = StaticCredentials(auth_id, auth_token)
 
@@ -319,20 +324,21 @@ class Smarty:
 
         project = QgsProject.instance()
 
-        if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            'Smarty',
-            "memory") 
-
-        elif self.dlg.new_layer_radio.isChecked():
+        if self.dlg.new_layer_radio.isChecked():
             layer_name = self.dlg.layer_name_single.text()
             
             if layer_name == "":
                 layer_name = "Smarty"
             
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
-            layer_name,
-            "memory") 
+            if self.dlg.id_check_box.isChecked():
+                id = self.dlg.single_address_id.text()
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+                layer_name,
+                "memory") 
+            else:
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
+                layer_name,
+                "memory") 
 
         elif self.dlg.existing_layer_radio.isChecked():
             index = self.dlg.layer_box.currentIndex()
@@ -383,8 +389,12 @@ class Smarty:
         else:
             label = self.dlg.point_label.text() 
 
-        feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-        county_fips, rdi, cong_dist, time_zone, dst, label])   
+        if self.dlg.new_layer_radio.isChecked() and self.dlg.id_check_box.isChecked():
+            feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+            county_fips, rdi, cong_dist, time_zone, dst, label]) 
+        else:
+            feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
+            county_fips, rdi, cong_dist, time_zone, dst, label])   
 
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText(), self.dlg.symbol_size_single.value())
         
@@ -421,7 +431,7 @@ class Smarty:
             self.dlg.existing_layer_radio.setDisabled(False)
 
     def smarty_batch(self):
-
+        
         if self.dlg.csv_file_output.filePath() == '':
             self.iface.messageBar().pushMessage("Error: ", "Please select an output file", level=Qgis.Critical, duration=6)
             return
@@ -652,28 +662,46 @@ class Smarty:
 
         for layer in layers: 
             if layer.type() == QgsMapLayer.VectorLayer: # you can also compare layer.type() == 0 (means it's a vectorlayer)
-                self.iface.messageBar().pushMessage("Vector layer", ")", level=Qgis.Success, duration=6)
-                self.iface.messageBar().pushMessage("Layer Name", str(layer.name), level=Qgis.Success, duration=6)
                 
                 attributeTableConfig = layer.attributeTableConfig()
 
-                # columnName = attributeTableConfig.columns.name()
-                # self.iface.messageBar().pushMessage("Column Names: ", str(columnName), level=Qgis.Success, duration=6)
+                # path = os.path.abspath(os.getcwd())
+                path = os.path.dirname(os.path.abspath(__file__))
+                path1 = path + '/smarty_example.shp'
+                path2 = path + '/smarty_example_2.shp'
+                self.iface.messageBar().pushMessage("Hi there", str(path), level=Qgis.Success, duration=6)
 
                 temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 "Smarty",
                 "memory") 
-                temp_attributeTableConfig = temp_layer.attributeTableConfig()
  
                 temp_layer2 = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 "Smarty",
                 "memory") 
+
+                temp_layer3 = QgsVectorLayer(path1,
+                "Smarty",
+                "ogr") 
+
+                temp_layer4 = QgsVectorLayer(path2,
+                "Smarty",
+                "ogr") 
+
+                temp_attributeTableConfig = temp_layer.attributeTableConfig()
                 temp_attributeTableConfig2 = temp_layer2.attributeTableConfig()
+                temp_attributeTableConfig3 = temp_layer3.attributeTableConfig()
+                temp_attributeTableConfig4 = temp_layer4.attributeTableConfig()
 
                 if attributeTableConfig.hasSameColumns(temp_attributeTableConfig):
-                    layers_list.append(layer)
+                    layers_list.append( layer )
 
                 elif attributeTableConfig.hasSameColumns(temp_attributeTableConfig2):
+                    layers_list.append( layer )
+
+                elif attributeTableConfig.hasSameColumns(temp_attributeTableConfig3):
+                    layers_list.append( layer )
+                
+                elif attributeTableConfig.hasSameColumns(temp_attributeTableConfig4):
                     layers_list.append( layer )
 
         self.dlg.layer_box.clear()
@@ -688,6 +716,9 @@ class Smarty:
         self.dlg.symbol_drop_down_single.addItems(symbol for symbol in symbols)
 
     def show_new_layer(self):
+        self.dlg.single_frame_id.setEnabled(False)
+        self.dlg.id_check_box.setEnabled(True)
+
         self.dlg.stacked_widget.setCurrentIndex(0)
         self.dlg.stacked_widget.setVisible(True)
 
@@ -695,6 +726,9 @@ class Smarty:
         self.dlg.new_layer_frame.setVisible(True)
     
     def show_existing_layer(self):
+        self.dlg.id_check_box.setEnabled(False)
+        self.dlg.id_check_box.setChecked(False)
+
         self.dlg.stacked_widget.setVisible(True)
         self.dlg.stacked_widget.setCurrentIndex(1)
         
@@ -767,7 +801,7 @@ class Smarty:
         return layer_out
     
     def autocomplete(self):
-        key = "90464575666784311"
+        key = "90464575666784311" # FIXME: CONST in a seperate key --> this is an embedded key
         hostname = "qgis"
 
         credentials = SharedCredentials(key, hostname)
@@ -852,10 +886,10 @@ class Smarty:
         return address
     
     def resize_dialog(self):
-        if self.dlg.tabWidget.currentIndex() == 0: # Batch Lookup
-            self.dlg.resize(586,720)
+        if self.dlg.tabWidget.currentIndex() == 0:
+            self.dlg.resize(623,614)
         else:
-            self.dlg.resize(586, 506) # Single Lookup
+            self.dlg.resize(586,506)
     
     def add_csv(self):
         if len(self.dlg.csv_file.filePath()) != 0 and self.dlg.batch_address.currentText != '': 
@@ -942,6 +976,7 @@ class Smarty:
                 wr.writerow(attrs)
     
     def enable_single_id_box(self):
+        self.dlg.single_address_id.setText('')
         if self.dlg.existing_layer_radio.isChecked():
             index = self.dlg.layer_box.currentIndex()
             chosen_layer = self.layers[index] 
@@ -955,6 +990,12 @@ class Smarty:
                 self.dlg.single_frame_id.setDisabled(False)
         else:
             return
+
+    def enable_single_id(self):
+        if self.dlg.id_check_box.isChecked():
+            self.dlg.single_frame_id.setEnabled(True)
+        else:
+            self.dlg.single_frame_id.setEnabled(False)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -978,6 +1019,7 @@ class Smarty:
                 self.dlg.frame.setDisabled(True)
             self.dlg.batch_id.setDisabled(True)
             self.dlg.single_frame_id.setDisabled(True)
+            self.dlg.id_check_box.setEnabled(False)
             self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
                 
             # Listen for clicked buttons
@@ -1011,6 +1053,7 @@ class Smarty:
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
+            self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
 
             # Set colors
             self.dlg.symbol_color_single.setColor(QColor(181, 40, 52))
