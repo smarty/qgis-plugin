@@ -24,9 +24,9 @@
 from calendar import c
 from itertools import count
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer
-from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
+from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem, QLinearGradient, QBrush, QPalette
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
-from qgis.PyQt.QtWidgets import QAction, QCompleter
+from qgis.PyQt.QtWidgets import QAction, QCompleter, QApplication
 # from qgis.core import QgsProject, Qgis
 from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsApplication,
                        QgsRectangle, QgsPointXY, QgsGeometry, QgsVectorLayer, QgsCategorizedSymbolRenderer,
@@ -50,7 +50,6 @@ import sys
 import pandas as pd
 import webbrowser
 import csv
-import time
 # import thread
 
     
@@ -60,7 +59,6 @@ class c(QCompleter): # FIXME: We currently are not using this...
         super().__init__(parent)
         self.smarty = smarty
         self.text = ''
-        self.layers = None
 
     def pathFromIndex(self, index): # So an idea is to piggy back off the textedited event
         self.text = str(index.data(role=2))
@@ -138,6 +136,9 @@ class Smarty:
         
         self.settings = QSettings()
         self.counter2 = 0
+        self.layers = None
+        self.value = 0
+        self.length = 0
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -433,8 +434,8 @@ class Smarty:
         if self.dlg.id_box.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
         else:
-            id_column_name = 'ID'
-            df.insert(0,'ID',range(0,0 + len(df))) 
+            id_column_name = 'smarty-id' # TODO: maybe think about adding a Smarty-id columnn... This way they probably will never have this column
+            df.insert(0,id_column_name,range(0,0 + len(df))) 
 
         address = self.dlg.batch_address.currentText()
         city = self.dlg.batch_city.currentText()
@@ -442,6 +443,8 @@ class Smarty:
         zip = self.dlg.batch_zip.currentText()
 
         add_df = df[[id_column_name, address, city, state, zip]].copy()
+
+        self.length = df.shape[0]
 
         project = QgsProject.instance()
 
@@ -466,6 +469,7 @@ class Smarty:
 
         counter = 0
         for _, row in add_df.iterrows():
+
             batch.add(StreetLookup())
             batch[counter].street = row[address] 
             batch[counter].city = row[city]
@@ -476,23 +480,37 @@ class Smarty:
             counter += 1
             
             if batch.is_full():
-                self.process_batch(df, id_column_name, layer_out, client, batch, self.counter2)
+                self.process_batch(df, id_column_name, layer_out, client, batch)
                 batch.clear()
                 counter = 0
         
         if len(batch) != 0:
-            self.process_batch(df, id_column_name, layer_out, client, batch, self.counter2)
+            self.process_batch(df, id_column_name, layer_out, client, batch) # I TOOK THE SELF.COUNTER2 OUT
         
         project.addMapLayer(layer_out)
         self.output_csv(layer_out)
 
         self.layers = self.refresh_layers()
         self.enable_single_id_box()
+        self.dlg.batch_button.setStyleSheet('background-color: white')
+        self.dlg.batch_button.setText('Process Batch')
 
-    def process_batch(self, df, id_column_name, layer_out, client, batch, counter2):
+    def process_batch(self, df, id_column_name, layer_out, client, batch):
+        # FIXME: https://stackoverflow.com/questions/2806552/qprogressbar-not-showing-progress --> look into these answers 
+
+        self.value += 100
+
+        if self.value < self.length:
+            percent = self.value / self.length
+            
+            self.dlg.batch_button.setStyleSheet('background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop: 0 #e3f2dd, stop: ' + str(percent) + ' #e3f2dd, stop: ' + str(percent+ .01) + ' rgba(0, 0, 0, 0), stop: 1 white)')
+            str_percent = str(percent)
+            self.dlg.batch_button.setText('Processing %' + str_percent[2:4])
+            QApplication.processEvents()
+
         try:
             client.send_batch(batch)
-        except exceptions.SmartyException as err: # 401 error
+        except exceptions.SmartyException as err: # 401 
             self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
             return
                 
@@ -557,6 +575,16 @@ class Smarty:
         return layer_out
         
         # TODO: output a list of the validated and non validated addresses? Maybe output second CSV (in same location as other file) with these addresses
+    def set_values(self):
+        palette = self.dlg.batch_button.palette()
+        QRectF = QtCore.QRectF(self.dlg.batch_button.rect())
+        gradient = QLinearGradient(QRectF.topLeft(), QRectF.topRight())
+        gradient.setColorAt(self.value-0.001, QColor('#f99e41'))
+        gradient.setColorAt(self.value, QColor('#ffffff'))
+        gradient.setColorAt(self.value+0.001, QColor('#ffffff'))
+        palette.setBrush(QPalette.Base, QBrush(gradient))
+        self.dlg.batch_button.setPalette(palette)
+
 
     def smarty_geo_link(self):
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
@@ -624,8 +652,13 @@ class Smarty:
 
         for layer in layers: 
             if layer.type() == QgsMapLayer.VectorLayer: # you can also compare layer.type() == 0 (means it's a vectorlayer)
+                self.iface.messageBar().pushMessage("Vector layer", ")", level=Qgis.Success, duration=6)
+                self.iface.messageBar().pushMessage("Layer Name", str(layer.name), level=Qgis.Success, duration=6)
                 
                 attributeTableConfig = layer.attributeTableConfig()
+
+                # columnName = attributeTableConfig.columns.name()
+                # self.iface.messageBar().pushMessage("Column Names: ", str(columnName), level=Qgis.Success, duration=6)
 
                 temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string",
                 "Smarty",
@@ -959,6 +992,7 @@ class Smarty:
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
             self.dlg.add_csv.clicked.connect(self.add_csv)
             self.dlg.add_tokens.clicked.connect(self.add_tokens) 
+            self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
             # self.dlg.existing_layer_radio_batch.clicked.connect(self.show_existing_layer_batch)
             # self.dlg.new_layer_radio_batch.clicked.connect(self.show_new_layer_batch)
 
@@ -966,7 +1000,6 @@ class Smarty:
             self.layers = self.refresh_layers()
             if len(self.layers) == 0:
                 self.dlg.existing_layer_radio.setDisabled(True)
-            self.iface.messageBar().pushMessage("Message: ", str(self.layers) + ' DOES have id', level=Qgis.Success, duration=6)
             self.fill_symbols()
 
             # Set correct visibility
@@ -978,12 +1011,11 @@ class Smarty:
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
-            
-            # Resize Dialog box for batch lookups
-            self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
 
+            # Set colors
             self.dlg.symbol_color_single.setColor(QColor(181, 40, 52))
             self.dlg.symbol_color.setColor(QColor(181, 40, 52))
+            # TODO: Maybe it is a good idea that the app opens on the tab widget 0
 
         # show the dialog
         self.dlg.show()
