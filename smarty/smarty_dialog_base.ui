@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>577</width>
-    <height>1013</height>
+    <width>591</width>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1433,7 +1433,7 @@ border-radius: 4px;</string>
          </rect>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_5">
          <attribute name="title">
@@ -1759,7 +1759,7 @@ border-radius: 4px;</string>
          <widget class="QLabel" name="label_9">
           <property name="geometry">
            <rect>
-            <x>30</x>
+            <x>10</x>
             <y>60</y>
             <width>101</width>
             <height>16</height>
@@ -1778,9 +1778,9 @@ border-radius: 4px;</string>
          <widget class="QComboBox" name="symbol_drop_down">
           <property name="geometry">
            <rect>
-            <x>150</x>
+            <x>130</x>
             <y>60</y>
-            <width>191</width>
+            <width>231</width>
             <height>21</height>
            </rect>
           </property>
@@ -1788,7 +1788,7 @@ border-radius: 4px;</string>
          <widget class="QLabel" name="label_10">
           <property name="geometry">
            <rect>
-            <x>40</x>
+            <x>20</x>
             <y>90</y>
             <width>91</width>
             <height>16</height>
@@ -1807,9 +1807,9 @@ border-radius: 4px;</string>
          <widget class="QgsColorButton" name="symbol_color">
           <property name="geometry">
            <rect>
-            <x>150</x>
+            <x>130</x>
             <y>90</y>
-            <width>191</width>
+            <width>231</width>
             <height>21</height>
            </rect>
           </property>
@@ -1817,7 +1817,7 @@ border-radius: 4px;</string>
          <widget class="QLabel" name="label_32">
           <property name="geometry">
            <rect>
-            <x>40</x>
+            <x>20</x>
             <y>120</y>
             <width>91</width>
             <height>16</height>
@@ -1830,9 +1830,9 @@ border-radius: 4px;</string>
          <widget class="QComboBox" name="batch_point_label">
           <property name="geometry">
            <rect>
-            <x>150</x>
+            <x>130</x>
             <y>120</y>
-            <width>191</width>
+            <width>231</width>
             <height>21</height>
            </rect>
           </property>
@@ -1840,9 +1840,9 @@ border-radius: 4px;</string>
          <widget class="QgsSpinBox" name="symbol_size_batch">
           <property name="geometry">
            <rect>
-            <x>150</x>
+            <x>130</x>
             <y>150</y>
-            <width>191</width>
+            <width>231</width>
             <height>27</height>
            </rect>
           </property>
@@ -1853,7 +1853,7 @@ border-radius: 4px;</string>
          <widget class="QLabel" name="label_41">
           <property name="geometry">
            <rect>
-            <x>40</x>
+            <x>20</x>
             <y>150</y>
             <width>91</width>
             <height>16</height>
@@ -1866,7 +1866,7 @@ border-radius: 4px;</string>
          <widget class="QLineEdit" name="layer_name_batch">
           <property name="geometry">
            <rect>
-            <x>150</x>
+            <x>130</x>
             <y>190</y>
             <width>351</width>
             <height>21</height>
@@ -1876,7 +1876,7 @@ border-radius: 4px;</string>
          <widget class="QLabel" name="label_5">
           <property name="geometry">
            <rect>
-            <x>60</x>
+            <x>40</x>
             <y>190</y>
             <width>81</width>
             <height>16</height>
