@@ -1341,7 +1341,7 @@ border-radius: 4px;</string>
         </rect>
        </property>
        <property name="text">
-        <string>Browse Subscriptions</string>
+        <string>Purchase Subscription</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_15">
@@ -1577,9 +1577,9 @@ border-radius: 4px;</string>
          <widget class="QgsFileWidget" name="csv_file_output">
           <property name="geometry">
            <rect>
-            <x>130</x>
+            <x>120</x>
             <y>340</y>
-            <width>381</width>
+            <width>391</width>
             <height>61</height>
            </rect>
           </property>
@@ -1750,6 +1750,22 @@ border-radius: 4px;</string>
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;ZIP Code&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
+         </widget>
+         <widget class="QCheckBox" name="display_output_box">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>390</y>
+            <width>131</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Display Output    </string>
+          </property>
          </widget>
         </widget>
         <widget class="QWidget" name="tab_6">

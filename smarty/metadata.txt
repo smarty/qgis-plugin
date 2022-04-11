@@ -5,7 +5,7 @@
 [general]
 name=Smarty
 qgisMinimumVersion=3.0
-description=Smarty attempt
+description=Smarty Geocoding QGIS Plugin
 version=0.1
 author=Smarty
 email=caroline@smarty.com
@@ -23,7 +23,7 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python, geocoding
 
 homepage=http://homepage
 category=Plugins

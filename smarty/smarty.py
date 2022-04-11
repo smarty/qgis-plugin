@@ -24,8 +24,8 @@
 from calendar import c # FIXME: I don't think we are using these?
 from itertools import count
 from operator import add
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QTimer
-from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem, QLinearGradient, QBrush, QPalette
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QCompleter, QApplication
 # from qgis.core import QgsProject, Qgis
@@ -34,7 +34,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling)
 
 #########
-from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch
+from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch, Request
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
 #########
@@ -224,11 +224,11 @@ class Smarty:
         self.dlg.meta_data.setChecked(False)
 
         # Set up the API keys for the US Street Address API
-        auth_id = 'c21cabd2-1a89-7746-e799-d35d70d7080b' # FIXME: secret key id --> change name to secret_key_id
-        auth_token = 'nD3IIoyZ3H4LSzNp6qpl' # secret key token --> secret_key_token
+        key = '119911182158064178' 
+        hostname = 'qgis_smarty' 
 
         # Set up credentials for API 
-        credentials = StaticCredentials(auth_id, auth_token)
+        credentials = SharedCredentials(key, hostname)
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.match = "enhanced" 
@@ -239,24 +239,32 @@ class Smarty:
             if not len(self.dlg.street.text()) > 0:
                 self.iface.messageBar().pushMessage("ERROR ", "Please add an address" , level=Qgis.Critical, duration=6)
                 return
+            i_address = self.dlg.street.text()
+            i_city = self.dlg.city.text() 
+            i_state = self.dlg.state.text() 
+            i_zip = self.dlg.zipcode.text()
             # If user has inputted information then set lookup information
-            lookup.street = self.dlg.street.text() 
-            lookup.city = self.dlg.city.text() 
-            lookup.state = self.dlg.state.text() 
-            lookup.zipcode = self.dlg.zipcode.text()
+            lookup.street = i_address
+            lookup.city = i_city 
+            lookup.state = i_state
+            lookup.zipcode = i_zip
             lookup.candidates = 3
         else:
             # Make sure user has inputted information before moving on with API call
             if not len(self.dlg.single_address_lookup.text()) > 0:
                 self.iface.messageBar().pushMessage("ERROR ", "Please add an address" , level=Qgis.Critical, duration=6)
                 return
-            lookup.street = self.dlg.single_address_lookup.text()
+            i_address = self.dlg.single_address_lookup.text()
+            i_city = ''
+            i_state = ''
+            i_zip = ''
+            lookup.street = i_address
         
         # Send the lookup
         try:
             client.send_lookup(lookup)
         except exceptions.SmartyException as err:
-            self.iface.messageBar().pushMessage("FAIL: ", str(exceptions.SmartyException), level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("FAIL ", str(exceptions.SmartyException), level=Qgis.Critical, duration=6)
             return
 
         result = lookup.result
@@ -266,10 +274,13 @@ class Smarty:
             self.dlg.resize(586, 532)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
-            self.iface.messageBar().pushMessage("NO MATCH: ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("NO MATCH ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
             return
 
-        candidate = result[0] # TODO: this is getting hit a lot for index out of range..
+        if len(result) == 0:
+            self.iface.messageBar().pushMessage("No match found ", "try entering the address in the 'Address Components'", level=Qgis.Critical, duration=6)
+            return
+        candidate = result[0] 
 
         project = QgsProject.instance()
 
@@ -281,17 +292,20 @@ class Smarty:
                 layer_name = "Smarty"
             
             if self.dlg.id_check_box.isChecked():
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 layer_name,
                 "memory") 
             else:
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 layer_name,
                 "memory") 
 
         elif self.dlg.existing_layer_radio.isChecked():
             index = self.dlg.layer_box.currentIndex()
             layers = self.refresh_layers()
+            if len(layers) == 0:
+                self.iface.messageBar().pushMessage("No matching layer ", "Please choose a valid layer", level=Qgis.Critical, duration=6)
+                return
             layer_out = layers[index] 
         
         # Receive all the API information
@@ -346,13 +360,13 @@ class Smarty:
         id = self.dlg.single_address_id.text()
         if self.dlg.new_layer_radio.isChecked() and self.dlg.id_check_box.isChecked():
             feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-            county_fips, rdi, cong_dist, time_zone, dst, label, success]) 
+            county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip]) 
         elif self.dlg.existing_layer_radio.isChecked() and self.dlg.single_frame_id.isEnabled():
             feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-            county_fips, rdi, cong_dist, time_zone, dst, label, success]) 
+            county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip]) 
         else:
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
-            county_fips, rdi, cong_dist, time_zone, dst, label, success])   
+            county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])   
 
         # Set symbol
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText(), self.dlg.symbol_size_single.value())
@@ -426,11 +440,11 @@ class Smarty:
             project = QgsProject.instance()
             # Create new VectorLayer to output results on
             if self.dlg.layer_name_batch.text() == '':
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 'Smarty',
                 "memory") 
             else:
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 self.dlg.layer_name_batch.text(),
                 "memory") 
             # Set up credentials and Batch
@@ -453,30 +467,34 @@ class Smarty:
                 counter += 1
                 # Once the batch is full we will send our API call in another function
                 if batch.is_full():
-                    self.process_batch(df, id_column_name, address, city, state, layer_out, client, batch, self.counter2)
+                    self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
                     batch.clear()
                     counter = 0
             # if the batch is not full but still has addresses on it we still want to process those addresses
             if len(batch) != 0:
-                self.process_batch(df, id_column_name, address, city, state, layer_out, client, batch, self.counter2) 
-            # Zoom into the extents of the newly created layer
-            canvas = self.iface.mapCanvas() 
-            layer_out.selectAll() 
-            canvas.zoomToSelected(layer_out)
-            canvas.refresh()
-            layer_out.removeSelection() 
-            # Add created layer to the project map
-            project.addMapLayer(layer_out)
-            # Use the output_csv function to save a csv of the returned API values on user's computer
+                self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2) 
+            
+            if self.dlg.display_output_box.isChecked():
+                # Zoom into the extents of the newly created layer
+                canvas = self.iface.mapCanvas() 
+                layer_out.selectAll() 
+                canvas.zoomToSelected(layer_out)
+                canvas.refresh()
+                layer_out.removeSelection() 
+                # Add created layer to the project map
+                project.addMapLayer(layer_out)
+                # Reset and update certain features on dialogue box
+                self.layers = self.refresh_layers()
+            
             self.output_csv(layer_out)
-
-            # Reset and update certain features on dialogue box
-            self.layers = self.refresh_layers()
             self.enable_single_id_box()
+            
             self.dlg.batch_button.setStyleSheet('background-color: rgb(10, 95, 255);color: white;border-width: 4px;border-radius: 4px;')
             self.dlg.batch_button.setText('Process Batch')
 
-    def process_batch(self, df, id_column_name, address, city, state, layer_out, client, batch, counter2):
+        self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
+
+    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, counter2):
         # Set up the progress bar to show user progress of batch lookups
         self.value += 100      
         if self.value < self.length:
@@ -493,6 +511,10 @@ class Smarty:
             return
         # Enumerate over the returned values on the batch
         for i, lookup in enumerate(batch):
+            i_address = str(df.at[i,address])
+            i_city = str(df.at[i,city])
+            i_state = str(df.at[i,state])
+            i_zip = str(df.at[i,zip])
             # Use chosen ID or create ID for each address
             if self.dlg.id_box.isChecked() == False:
                 counter2 += 1 
@@ -509,17 +531,15 @@ class Smarty:
             candidates = lookup.result
             # If there are no result from the API on this particular address we will output the address the API received
             if len(candidates) == 0:
-                self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
-                
-                address_result = str(df.at[i,address])
-                city_result = str(df.at[i,city])
-                state_result = str(df.at[i,state])
-                zip_result = str(df.at[i,id_column_name])
+                self.iface.messageBar().pushMessage('No Match for given address. ' + str(df.at[i,address]) + ' ' + str(df.at[i,city]) + ' ' + str(df.at[i,state]))
+                address_result = i_address
+                city_result = i_city
+                state_result = i_state
+                zip_result = i_zip
                 feature.setAttributes([id, address_result, '', '', city_result, state_result, zip_result, '', '', '',
-                '', '', '', '', '', label, 'No Match'])
+                '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
                 continue
-                    
-            candidates = lookup.result
+
             candidate = candidates[0]
             # Receive all API information
             longitude = candidate.metadata.longitude
@@ -543,10 +563,10 @@ class Smarty:
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(point_out))
             # Handle success of address lookup
-            success = Utils.handle_success(candidates) # TODO: FIGURE OUT WHAT IS GOING ON HERE
+            success = Utils.handle_success(candidates) 
             # Set attributes for associated layer
             feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
-                            county_fips, rdi, cong_dist, time_zone, dst, label, success])
+                            county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
             # Set symbol features
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
             # Add symbol to created layer    
@@ -566,11 +586,11 @@ class Smarty:
         project = QgsProject.instance()
         # Create new vector layer
         if self.dlg.layer_name_batch.text() == '':
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
             'Smarty',
             "memory") 
         else:
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
             self.dlg.layer_name_batch.text(),
             "memory") 
         # Set up credentials 
@@ -596,21 +616,22 @@ class Smarty:
         # If the batch is not full but contians address process the batch 
         if len(batch) != 0:
             self.process_freeform_batch(df, id_column_name, address, layer_out, client, batch, self.counter2) 
-        # Zoom to the extents of the created layer
-        canvas = self.iface.mapCanvas() 
-        layer_out.selectAll() 
-        canvas.zoomToSelected(layer_out)
-        canvas.refresh()
-        layer_out.removeSelection() 
-        # Add the new layer to the current project map
-        project.addMapLayer(layer_out)
-        # Output a csv of the information received from the API
-        self.output_csv(layer_out)
-        # Reset certain parts of the dialogue box
-        self.layers = self.refresh_layers()
-        self.enable_single_id_box()
+        if self.dlg.display_output_box.isChecked():
+            # Zoom to the extents of the created layer
+            canvas = self.iface.mapCanvas() 
+            layer_out.selectAll() 
+            canvas.zoomToSelected(layer_out)
+            canvas.refresh()
+            layer_out.removeSelection() 
+            # Add the new layer to the current project map
+            project.addMapLayer(layer_out)
+            # Reset certain parts of the dialogue box
+            self.layers = self.refresh_layers()
+
         self.dlg.batch_button.setStyleSheet('background-color: rgb(10, 95, 255);color: white;border-width: 4px;border-radius: 4px;')
         self.dlg.batch_button.setText('Process Batch')
+        self.output_csv(layer_out)
+        self.enable_single_id_box()
         return df
     
     def process_freeform_batch(self, df, id_column_name, address, layer_out, client, batch, counter2):
@@ -630,6 +651,10 @@ class Smarty:
             return
         # Enumerate over the batch results
         for i, lookup in enumerate(batch):
+            i_address = str(df.at[i,address])
+            i_city = ''
+            i_state = ''
+            i_zip = ''
             # Create an ID for each Address or use ID user provided
             if self.dlg.id_box.isChecked() == False:
                 counter2 += 1 
@@ -646,17 +671,16 @@ class Smarty:
             candidates = lookup.result
             # There were no potential addresses returned so we output the address they gave us
             if len(candidates) == 0:
-                self.iface.messageBar().pushMessage("NO MATCH FOR ADDRESS #: ", str(i), level=Qgis.Critical, duration=6)
+                self.iface.messageBar().pushMessage('No Match for given address. ' + str(df.at[i,address]))  
                 address_result = str(df.at[i,address])
                 city_result = ''
                 state_result = ''
-                zip_result = str(df.at[i,id_column_name])
+                zip_result = ''
                 feature.setAttributes([id, address_result, '', '', city_result, state_result, zip_result, '', '', '',
-                '', '', '', '', '', label, 'No Match'])
+                '', '', '', '', '', label, 'No Match - The address is invalid.', i_address, i_city, i_state, i_zip])
 
                 continue
                     
-            candidates = lookup.result
             candidate = candidates[0]
             # Receive information returned by API
             longitude = candidate.metadata.longitude
@@ -683,7 +707,7 @@ class Smarty:
             success = Utils.handle_success(candidates)
             # Set up the attributes associated with the new layer
             feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
-                            county_fips, rdi, cong_dist, time_zone, dst, label, success])
+                            county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
             # Set symbol and features for lat/long point
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
             # Add lat/long point to layer   
@@ -712,21 +736,21 @@ class Smarty:
         return symbol
     
     def add_tokens(self):
-        # Grab what user has set in their auth tokens and set them as global variables
-        self.settings.setValue("auth_id", self.dlg.auth_id.text())
-        self.settings.setValue("auth_token", self.dlg.auth_token.text())
-
+    
         auth_id_len = len(self.dlg.auth_id.text())
         auth_token_len = len(self.dlg.auth_token.text())
         # Make sure that the user has infact added someting to the dialogue box for their credentials
         if auth_id_len == 0 and auth_token_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID and an Auth Token", level=Qgis.Critical, duration=6)
+            self.dlg.frame.setEnabled(False)
             return
         elif auth_id_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth ID", level=Qgis.Critical, duration=6)
+            self.dlg.frame.setEnabled(False)
             return
         elif auth_token_len == 0:
             self.iface.messageBar().pushMessage("FAIL: ", "Please add an Auth Token", level=Qgis.Critical, duration=6)
+            self.dlg.frame.setEnabled(False)
             return
         # Set up credentials for an initial lookup
         credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text()) 
@@ -739,9 +763,12 @@ class Smarty:
         except exceptions.SmartyException as err:
             message = str(err)
             self.iface.messageBar().pushMessage("Error ", message, level=Qgis.Critical, duration=6)
-            self.iface.messageBar().pushMessage("Error ", 'Make sure you added your credentials correctly', level=Qgis.Critical, duration=6)
+            self.dlg.frame.setEnabled(False)
             return
 
+        # Grab what user has set in their auth tokens and set them as global variables
+        self.settings.setValue("auth_id", self.dlg.auth_id.text())
+        self.settings.setValue("auth_token", self.dlg.auth_token.text())
         self.dlg.frame.setEnabled(True)
     
     def meta_resize(self): # resize the dialogue box to show or hide the outputted metadata
@@ -766,10 +793,10 @@ class Smarty:
                 path1 = path + '/smarty_example_id.shp' 
                 path2 = path + '/smarty_example.shp'
                 # Make sure that any layers users can add addresses to are layers created by Smarty's QGIS plugin
-                temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                temp_layer = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 "Smarty",
                 "memory") 
-                temp_layer2 = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string",
+                temp_layer2 = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
                 "Smarty",
                 "memory") 
                 temp_layer3 = QgsVectorLayer(path1,
@@ -872,8 +899,8 @@ class Smarty:
         return layer_out
    
     def autocomplete(self):
-        key = "90464575666784311" # FIXME: CONST in a seperate key --> this is an embedded key
-        hostname = "qgis"
+        key = '119911182158064178' # FIXME: secret key id --> change name to secret_key_id
+        hostname = 'qgis_smarty' # secret key token --> secret_key_token
 
         credentials = SharedCredentials(key, hostname)
         client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
@@ -919,7 +946,10 @@ class Smarty:
     
     def resize_dialog(self): # Resize the dialogue box depending on which tab user is on (single address lookup vs batch lookup)
         if self.dlg.tabWidget.currentIndex() == 0:
-            self.dlg.resize(586,690)
+            if self.dlg.tabWidget_3.currentIndex() == 1:
+                self.dlg.resize(586,506)
+            else:
+                self.dlg.resize(586,690)
         else:
             self.dlg.resize(586,506)
     
@@ -984,8 +1014,7 @@ class Smarty:
         if self.dlg.id_box.isChecked():
             self.dlg.batch_id.setEnabled(True)
         else:
-            self.iface.messageBar().pushMessage("we ", "hit the false", level=Qgis.Critical, duration=6)
-            self.dlg.batch_id.setEnabled(False)
+            self.dlg.batch_id.setEnabled(False) # TODO: make sure that the reset isn't triggering other function
     
     def single_line_enable(self): # Enable certain parts of dialogue depending on whether the user is use a single line entry
         if self.dlg.single_line_box.isChecked():
@@ -995,7 +1024,8 @@ class Smarty:
     
     def reset_csv(self):
         # Reset all aspects of the dialogue associated with adding/setting the input csv file
-        self.dlg.csv_file.setFilePath('')
+        self.dlg.csv_file.setFilePath(' ')
+        self.dlg.csv_file_output.setFilePath(' ')
         
         self.dlg.id_box.setChecked(False)
         self.dlg.single_line_box.setChecked(False)
@@ -1005,6 +1035,8 @@ class Smarty:
         self.dlg.batch_state.clear()
         self.dlg.batch_zip.clear()
         self.dlg.batch_point_label.clear()
+
+        self.dlg.display_output_box.setChecked(True)
 
     def handle_success(self, result): # Handle and determine the success of the API request
         if Utils.is_valid(result):
@@ -1042,10 +1074,12 @@ class Smarty:
     def enable_single_id_box(self): # Enable certain parts of dialogue depending on whether the user is adding an ID to an address
         if self.dlg.existing_layer_radio.isChecked():
             index = self.dlg.layer_box.currentIndex()
+            if len(self.layers) == 0:
+                return
             chosen_layer = self.layers[index] 
             
             field_name = 'id'
-            field_index = chosen_layer.fields().indexFromName(field_name)
+            field_index = chosen_layer.fields().indexFromName(field_name) # TODO: python error here, after we delete the layers that populate the drop down.. maybe refill it everytime someone clicks on the existing layer?
 
             if field_index == -1:
                 self.dlg.single_frame_id.setDisabled(True)
@@ -1083,8 +1117,6 @@ class Smarty:
             self.dlg.batch_id.setDisabled(True)
             self.dlg.single_frame_id.setDisabled(True)
             self.dlg.id_check_box.setEnabled(False)
-            self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
-            self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
                 
             # Listen for clicked buttons
             self.dlg.single_lookup.clicked.connect(self.smarty_single)
@@ -1111,11 +1143,16 @@ class Smarty:
             self.dlg.meta_data_results.setVisible(False)
             self.dlg.results.setVisible(False)
             self.dlg.stacked_widget.setVisible(False)
+
+            # Set default checked box
+            self.dlg.display_output_box.setChecked(True)
             
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
             self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
+            self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
+            self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
 
             # Set colors
             self.dlg.symbol_color_single.setColor(QColor(255, 0, 22))
