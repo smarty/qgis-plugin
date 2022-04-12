@@ -8,12 +8,12 @@ qgisMinimumVersion=3.0
 description=Smarty Geocoding QGIS Plugin
 version=0.1
 author=Smarty
-email=caroline@smarty.com
+email=osgeo-it@smarty.com
 
-about=Provide a brief description of the plugin and its purpose.
+about=The goal of this plugin is to provide an easy way for QGIS users to geocode records and then display them on the map.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/smartystreets/qgis-plugin/issues
+repository=https://github.com/smartystreets/qgis-plugin
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,7 +25,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python, geocoding
 
-homepage=http://homepage
+homepage=https://github.com/smartystreets/qgis-plugin
 category=Plugins
 icon=smarty-icon-gradient.png
 # experimental flag

@@ -209,6 +209,10 @@ class Smarty:
             self.iface.removeToolBarIcon(action)
     
     def smarty_single(self):
+        # Check to make sure that the user has added an ID if the layer requires an ID
+        if self.dlg.id_check_box.isChecked() and len(self.dlg.single_address_id.text()) == 0:
+            self.iface.messageBar().pushMessage("ERROR ", "User indicated desire to add an ID, but no ID was given. Please add an ID." , level=Qgis.Critical, duration=6)
+            return
         # Check to make sure that either a new layer or existing layer has been chosen 
         if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
             self.iface.messageBar().pushMessage("ERROR ", "Please choose an existing layer or create a new one." , level=Qgis.Critical, duration=6)
@@ -229,6 +233,8 @@ class Smarty:
 
         # Set up credentials for API 
         credentials = SharedCredentials(key, hostname)
+        request = Request()
+        credentials.sign(request)
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.match = "enhanced" 
@@ -1146,6 +1152,7 @@ class Smarty:
 
             # Set default checked box
             self.dlg.display_output_box.setChecked(True)
+            self.dlg.zoom_in.setChecked(True)
             
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
