@@ -211,7 +211,7 @@ class Smarty:
     def smarty_single(self):
         # Check to make sure that the user has added an ID if the layer requires an ID
         if self.dlg.id_check_box.isChecked() and len(self.dlg.single_address_id.text()) == 0:
-            self.iface.messageBar().pushMessage("ERROR ", "User indicated desire to add an ID, but no ID was given. Please add an ID." , level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("ERROR ", "User indicated desire to add an ID, but no ID was given - Please add an ID." , level=Qgis.Critical, duration=6)
             return
         # Check to make sure that either a new layer or existing layer has been chosen 
         if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
@@ -716,9 +716,11 @@ class Smarty:
                             county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
             # Set symbol and features for lat/long point
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
+
             # Add lat/long point to layer   
             layer_out.dataProvider().addFeature(feature)
             layer_out.renderer().setSymbol(symbol)    
+
             layer_out.updateExtents()
             # Reset certain areas of the dialogue box
             self.dlg.layer_name_batch.setText('')
@@ -776,7 +778,8 @@ class Smarty:
         self.settings.setValue("auth_id", self.dlg.auth_id.text())
         self.settings.setValue("auth_token", self.dlg.auth_token.text())
         self.dlg.frame.setEnabled(True)
-    
+        self.iface.messageBar().pushMessage("Success", "Auth ID and Auth Token are valid and have been added to the plugin", level=Qgis.Success, duration=6)
+
     def meta_resize(self): # resize the dialogue box to show or hide the outputted metadata
         if self.dlg.meta_data.isChecked():
             self.dlg.resize(586,1018)
@@ -1008,7 +1011,7 @@ class Smarty:
                 self.dlg.batch_city.setCurrentIndex(counter - 1)
             elif field == 'state' or field == 'st':
                 self.dlg.batch_state.setCurrentIndex(counter - 1)
-            elif field == 'zip' or field == 'zipcode' or field == 'zip_code':
+            elif field == 'zip' or field == 'zipcode' or field == 'zip_code' or field == 'zip code':
                 self.dlg.batch_zip.setCurrentIndex(counter - 1)
             counter +=1
 
