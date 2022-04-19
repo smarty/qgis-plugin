@@ -499,6 +499,7 @@ class Smarty:
             self.dlg.batch_button.setText('Process Batch')
 
         self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
+        self.layers = self.refresh_layers()
 
     def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, counter2):
         # Set up the progress bar to show user progress of batch lookups
@@ -992,6 +993,7 @@ class Smarty:
         df = pd.read_csv(self.dlg.csv_file.filePath())
         # Create and populate downs with the column names
         fields = df.columns.values.tolist()
+        
         fields.insert(0,'----')
 
         self.dlg.batch_address.addItems(fields) 
@@ -1000,19 +1002,21 @@ class Smarty:
         self.dlg.batch_zip.addItems(fields)
         self.dlg.batch_id.addItems(fields)
         fields.insert(0,"None")
+        fields.remove('----')
+
         self.dlg.batch_point_label.addItems(fields)
         # Auto populate drop downs with the most intuitive column
         counter = 0
         for field in fields:
             field = field.lower()
             if field == 'address' or field == 'street' or field == 'addr':
-                self.dlg.batch_address.setCurrentIndex(counter - 1)
+                self.dlg.batch_address.setCurrentIndex(counter)
             elif field == 'city':
-                self.dlg.batch_city.setCurrentIndex(counter - 1)
+                self.dlg.batch_city.setCurrentIndex(counter)
             elif field == 'state' or field == 'st':
-                self.dlg.batch_state.setCurrentIndex(counter - 1)
+                self.dlg.batch_state.setCurrentIndex(counter)
             elif field == 'zip' or field == 'zipcode' or field == 'zip_code' or field == 'zip code':
-                self.dlg.batch_zip.setCurrentIndex(counter - 1)
+                self.dlg.batch_zip.setCurrentIndex(counter)
             counter +=1
 
     def enable_id_box(self): # Enable certain parts of dialogue for adding an address ID
@@ -1167,6 +1171,8 @@ class Smarty:
             # Set colors
             self.dlg.symbol_color_single.setColor(QColor(255, 0, 22))
             self.dlg.symbol_color.setColor(QColor(255, 0, 22))
+
+            self.layers = self.refresh_layers()
 
         # show the dialog
         self.dlg.show()
