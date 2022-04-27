@@ -22,7 +22,7 @@
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS.
 """
-
+import pip
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -31,14 +31,28 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-    #
 
-    #import subprocess
-    #import sys
-    #import pip
+    # try:
+    #     import subprocess
+    #     import sys
+    #     import pip
 
-    #subprocess.check_call([sys.executable, "-m", "pip", "install", 'smartystreets_python_sdk'])
+    #     subprocess.check_call([sys.executable, "-m", "pip", "install", 'smartystreets_python_sdk'])
+    # except:
+    #     iface.messageBar().pushMessage("Error")
+
+    import subprocess
+    import sys
+    import pip
+    
+    install('smartystreets_python_sdk')
     
     from .smarty import Smarty
 
     return Smarty(iface)
+
+def install(package):
+    if hasattr(pip, 'main'):
+        pip.main(['install', package])
+    else:
+        pip._internal.main(['install', package])
