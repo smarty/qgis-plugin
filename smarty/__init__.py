@@ -8,7 +8,7 @@
                              -------------------
         begin                : 2022-01-19
         copyright            : (C) 2022 by Smarty
-        email                : caroline@smarty.com
+        email                : osgeo-it@smarty.com
         git sha              : $Format:%H$
  ***************************************************************************/
 
