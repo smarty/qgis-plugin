@@ -34,6 +34,8 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling)
 
 #########
+import pip
+import smartystreets_python_sdk
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch, Request
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
@@ -457,7 +459,7 @@ class Smarty:
             auth_id = self.dlg.auth_id.text()
             auth_token = self.dlg.auth_token.text()
             credentials = StaticCredentials(auth_id, auth_token)
-            client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+            client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
             batch = Batch()
 
             counter = 0
@@ -604,7 +606,7 @@ class Smarty:
         auth_id = self.dlg.auth_id.text()
         auth_token = self.dlg.auth_token.text()
         credentials = StaticCredentials(auth_id, auth_token)
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
         batch = Batch()
         # Iterate over all the rows of the pandas dataframe
         counter = 0
@@ -763,7 +765,7 @@ class Smarty:
             return
         # Set up credentials for an initial lookup
         credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text()) 
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.street = "484 W Bulldog Blvd, Provo, UT 84604" # FIXME: maybe put a different address... currently provo chic-fil-a
         # Send one lookup to make sure they are authorized to use send batches to Smarty API
@@ -1168,11 +1170,15 @@ class Smarty:
             self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
             self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
 
-            # Set colors
+            # Set colorsx
             self.dlg.symbol_color_single.setColor(QColor(255, 0, 22))
             self.dlg.symbol_color.setColor(QColor(255, 0, 22))
 
             self.layers = self.refresh_layers()
+
+            ### TEST EXECUTABLE
+            x = os.path.dirname(sys.executable)
+            self.iface.messageBar().pushMessage("My message: ", str(x), level=Qgis.Critical, duration=6)
 
         # show the dialog
         self.dlg.show()

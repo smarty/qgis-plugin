@@ -35,15 +35,15 @@ def classFactory(iface):  # pylint: disable=invalid-name
     # try:
     #     import subprocess
     #     import sys
-    #     import pip
+    #     # import pip
 
     #     subprocess.check_call([sys.executable, "-m", "pip", "install", 'smartystreets_python_sdk'])
+    #     import smartystreets_python_sdk
     # except:
-    #     iface.messageBar().pushMessage("Error")
+    #         iface.messageBar().pushMessage("Error")
 
     import subprocess
     import sys
-    import pip
     
     install('smartystreets_python_sdk')
     
