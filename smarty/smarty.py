@@ -1178,7 +1178,8 @@ class Smarty:
 
             ### TEST EXECUTABLE
             x = os.path.dirname(sys.executable)
-            self.iface.messageBar().pushMessage("My message: ", str(x), level=Qgis.Critical, duration=6)
+            s = str(sys.executable)
+            self.iface.messageBar().pushMessage("My message: ", str(s), level=Qgis.Critical, duration=6)
 
         # show the dialog
         self.dlg.show()
