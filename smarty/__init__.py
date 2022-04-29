@@ -41,8 +41,8 @@ def classFactory(iface):  # pylint: disable=invalid-name
     #     import smartystreets_python_sdk
     # except:
     #         iface.messageBar().pushMessage("Error")
-
-    process = subprocess.Popen(["c:/Program Files/QGIS 3.24.2/apps/Python39/python3.exe",  '-m', 'pip', 'install', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    process = subprocess.Popen(["C:/Program Files/QGIS 3.24.2/bin/python.exe",  '-m', 'pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org','smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    # process = subprocess.Popen(["c:/Program Files/QGIS 3.24.2/apps/Python39/python3.exe",  '-m', 'pip', 'install', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
     stdout = process.communicate()[0]
     x = str('STDOUT:{}'.format(stdout))
     print(x)
