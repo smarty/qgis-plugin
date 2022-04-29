@@ -24,6 +24,7 @@
 """
 import subprocess
 import sys
+import platform
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -33,17 +34,34 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
 
-    # try:
-    #     import subprocess
-    #     import sys
-    #     # import pip
+    # x = str(sys.executable) 
+    currentPlatform = platform.system()
 
-    #     subprocess.check_call([sys.executable, "-m", "pip", "install", 'smartystreets_python_sdk'])
-    #     import smartystreets_python_sdk
-    # except:
-    #         iface.messageBar().pushMessage("Error")
-    x = str(sys.executable)
-    process = subprocess.Popen([x,  '-m', 'pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org','smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    if len(currentPlatform) == 0:
+        return
+
+    if currentPlatform == 'Windows':
+
+        subprocess.check_call(["attrib", "-r", 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
+
+        # TODO: Find path to the site-packages place
+        # TODO: Find how to change permissions for 'Windows'
+        # TODO: Find path to the python executable
+
+        process = subprocess.Popen(['C:/Program Files/QGIS 3.24.2/bin/python.exe','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    elif currentPlatform == 'Linux' | currentPlatform == 'Darwin':
+        # TODO: Find path to the site-packages place
+        # TODO: Find how to change permissions for 'Darwin'/'Linux'
+        # TODO: Find path to the python executable
+
+        subprocess.run(['chmod', '0444', 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
+
+        process = subprocess.Popen(['C:/Program Files/QGIS 3.24.2/bin/python.exe','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    else:
+        return
+    
+    
+    # process = subprocess.Popen([x,  '-m', 'pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org','smartystreets_python_sdk'], stdout=subprocess.PIPE)
     # process = subprocess.Popen(["c:/Program Files/QGIS 3.24.2/apps/Python39/python3.exe",  '-m', 'pip', 'install', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
     stdout = process.communicate()[0]
     x = str('STDOUT:{}'.format(stdout))
@@ -52,4 +70,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     from .smarty import Smarty
 
     return Smarty(iface)
+
 
