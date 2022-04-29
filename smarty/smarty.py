@@ -1176,11 +1176,6 @@ class Smarty:
 
             self.layers = self.refresh_layers()
 
-            ### TEST EXECUTABLE
-            x = os.path.dirname(sys.executable)
-            s = str(sys.executable)
-            self.iface.messageBar().pushMessage("My message: ", str(s), level=Qgis.Critical, duration=6)
-
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
