@@ -49,14 +49,14 @@ def classFactory(iface):  # pylint: disable=invalid-name
         # TODO: Find path to the python executable
 
         process = subprocess.Popen(['C:/Program Files/QGIS 3.24.2/bin/python.exe','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
-    elif currentPlatform == 'Linux' | currentPlatform == 'Darwin':
+    elif currentPlatform == 'Linux' or currentPlatform == 'Darwin':
         # TODO: Find path to the site-packages place
         # TODO: Find how to change permissions for 'Darwin'/'Linux'
         # TODO: Find path to the python executable
 
-        subprocess.run(['chmod', '0444', 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
+        # subprocess.run(['chmod', '0444', 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
 
-        process = subprocess.Popen(['C:/Program Files/QGIS 3.24.2/bin/python.exe','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
+        process = subprocess.Popen(['/Applications/QGIS.app/Contents/MacOS/bin/python3','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
     else:
         return
     
