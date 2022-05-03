@@ -23,8 +23,8 @@
  This script initializes the plugin, making it known to QGIS.
 """
 import subprocess
-import sys
 import platform
+import os
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -41,31 +41,13 @@ def classFactory(iface):  # pylint: disable=invalid-name
         return
 
     if currentPlatform == 'Windows':
-
-        subprocess.check_call(["attrib", "-r", 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
-
-        # TODO: Find path to the site-packages place
-        # TODO: Find how to change permissions for 'Windows'
-        # TODO: Find path to the python executable
-
-        process = subprocess.Popen(['C:/Program Files/QGIS 3.24.2/bin/python.exe','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
-    elif currentPlatform == 'Linux' or currentPlatform == 'Darwin':
-        # TODO: Find path to the site-packages place
-        # TODO: Find how to change permissions for 'Darwin'/'Linux'
-        # TODO: Find path to the python executable
-
-        # subprocess.run(['chmod', '0444', 'C:/Program Files/QGIS 3.24.2/apps/Python39/Lib/site-packages'])
-
+        os.system("./install.bat")
+    elif currentPlatform == 'Darwin':
         process = subprocess.Popen(['/Applications/QGIS.app/Contents/MacOS/bin/python3','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
+    elif currentPlatform == 'Linux':
+        print("Linux")
     else:
-        return
-    
-    
-    # process = subprocess.Popen([x,  '-m', 'pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org','smartystreets_python_sdk'], stdout=subprocess.PIPE)
-    # process = subprocess.Popen(["c:/Program Files/QGIS 3.24.2/apps/Python39/python3.exe",  '-m', 'pip', 'install', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
-    stdout = process.communicate()[0]
-    x = str('STDOUT:{}'.format(stdout))
-    print(x)
+        print("Can't determine OS of user")
     
     from .smarty import Smarty
 
