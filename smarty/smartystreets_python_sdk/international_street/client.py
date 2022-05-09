@@ -1,5 +1,5 @@
-from smartystreets_python_sdk import Request
-from smartystreets_python_sdk.international_street import Candidate
+# from smartystreets_python_sdk import Request
+# from . import Candidate
 
 
 class Client:

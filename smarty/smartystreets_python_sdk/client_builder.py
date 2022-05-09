@@ -1,12 +1,13 @@
-import smartystreets_python_sdk as smarty
-from smartystreets_python_sdk.us_street import Client as USStreetClient
-from smartystreets_python_sdk.us_zipcode import Client as USZIPClient
-from smartystreets_python_sdk.us_extract import Client as USExtractClient
-from smartystreets_python_sdk.us_autocomplete import Client as USAutocompleteClient
-from smartystreets_python_sdk.us_autocomplete_pro import Client as USAutocompleteProClient
-from smartystreets_python_sdk.us_reverse_geo import Client as USReverseGeoClient
-from smartystreets_python_sdk.international_street import Client as InternationalStreetClient
-from smartystreets_python_sdk.international_autocomplete import Client as InternationalAutocompleteClient
+# import smartystreets_python_sdk as smarty
+from . import *
+from .us_street import Client as USStreetClient
+from .us_zipcode import Client as USZIPClient
+from .us_extract import Client as USExtractClient
+from .us_autocomplete import Client as USAutocompleteClient
+from .us_autocomplete_pro import Client as USAutocompleteProClient
+from .us_reverse_geo import Client as USReverseGeoClient
+from .international_street import Client as InternationalStreetClient
+from .international_autocomplete import Client as InternationalAutocompleteClient
 
 
 class ClientBuilder:
@@ -17,7 +18,7 @@ class ClientBuilder:
         These methods are chainable, so you can usually get set up with one line of code.
         """
         self.signer = signer
-        self.serializer = smarty.NativeSerializer()
+        self.serializer = NativeSerializer() # TODO: 
         self.http_sender = None
         self.max_retries = 5
         self.max_timeout = 10000
@@ -90,7 +91,7 @@ class ClientBuilder:
         :param password: Password to authenticate with the proxy server
         :return: Returns self to accommodate method chaining.
         """
-        self.proxy = smarty.Proxy(host, username, password)
+        self.proxy = Proxy(host, username, password) # TODO
         return self
 
     def with_custom_header(self, custom_header):
@@ -156,23 +157,23 @@ class ClientBuilder:
         if self.http_sender is not None:
             return self.http_sender
 
-        sender = smarty.RequestsSender(self.max_timeout, self.proxy)
+        sender = RequestsSender(self.max_timeout, self.proxy) # TODO
         sender.debug = self.debug
 
-        sender = smarty.StatusCodeSender(sender)
+        sender = StatusCodeSender(sender) # TODO
 
         if self.header is not None:
-            sender = smarty.CustomHeaderSender(self.header, sender)
+            sender = CustomHeaderSender(self.header, sender) # TODO
 
         if self.signer is not None:
-            sender = smarty.SigningSender(self.signer, sender)
+            sender = SigningSender(self.signer, sender) # TODO
 
         if self.max_retries > 0:
-            sender = smarty.RetrySender(self.max_retries, sender)
+            sender = RetrySender(self.max_retries, sender) # TODO
 
-        sender = smarty.URLPrefixSender(self.url_prefix, sender)
+        sender = URLPrefixSender(self.url_prefix, sender) # TODO
 
-        sender = smarty.LicenseSender(self.licenses, sender)
+        sender = LicenseSender(self.licenses, sender) # TODO
 
         return sender
 

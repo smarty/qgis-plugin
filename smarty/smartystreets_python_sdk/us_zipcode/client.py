@@ -1,5 +1,5 @@
-from smartystreets_python_sdk.us_zipcode import Result
-from smartystreets_python_sdk import Request, Batch
+# from . import Result
+from .. import Request, Batch
 
 
 class Client:

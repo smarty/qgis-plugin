@@ -1,6 +1,6 @@
-from smartystreets_python_sdk import Request
-from smartystreets_python_sdk.exceptions import SmartyException
-from smartystreets_python_sdk.international_autocomplete import Candidate
+# from smartystreets_python_sdk import Request
+from ..exceptions import SmartyException
+# from . import Candidate
 
 
 class Client:

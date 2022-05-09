@@ -1,6 +1,6 @@
-from .components import Components
-from .metadata import Metadata
-from .analysis import Analysis
+# from . import Components
+# from . import Metadata
+# from . import Analysis
 from .rootlevel import RootLevel
 
 class Candidate(RootLevel):

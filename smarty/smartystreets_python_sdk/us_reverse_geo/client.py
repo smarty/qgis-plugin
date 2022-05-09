@@ -1,5 +1,5 @@
-from smartystreets_python_sdk import Request
-from smartystreets_python_sdk.us_reverse_geo import Response
+# from smartystreets_python_sdk import Request
+# from . import Response
 
 
 class Client:

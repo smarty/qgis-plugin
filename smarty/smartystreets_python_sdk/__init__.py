@@ -13,5 +13,5 @@ from .url_prefix_sender import URLPrefixSender
 from .batch import Batch
 from .client_builder import ClientBuilder
 from .proxy import Proxy
-import smartystreets_python_sdk.errors
-import smartystreets_python_sdk.exceptions
+# import smartystreets_python_sdk.errors
+# import smartystreets_python_sdk.exceptions

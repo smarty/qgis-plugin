@@ -1,6 +1,6 @@
-from smartystreets_python_sdk import Request
-from smartystreets_python_sdk.exceptions import SmartyException
-from smartystreets_python_sdk.us_autocomplete_pro import Suggestion, geolocation_type
+from .. import Request
+from ..exceptions import SmartyException
+from . import Suggestion, geolocation_type
 
 
 class Client:

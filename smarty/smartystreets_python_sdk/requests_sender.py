@@ -1,7 +1,9 @@
 from requests import Session, Request
 from .response import Response
-import smartystreets_python_sdk as smarty
-import smartystreets_python_sdk_version as version
+from .exceptions import SmartyException
+# import smartystreets_python_sdk as smarty
+# import smartystreets_python_sdk_version as version
+from ..smartystreets_python_sdk_version import __version__
 
 
 class RequestsSender:
@@ -35,7 +37,8 @@ class RequestsSender:
         if not self.proxy:
             return {}
         if not self.proxy.host:
-            raise smarty.exceptions.SmartyException('Proxy must have a valid host (including port)')
+            # raise smarty.exceptions.SmartyException('Proxy must have a valid host (including port)')
+            raise SmartyException('Proxy must have a valid host (including port)')
 
         proxy_string = 'https://'
 
@@ -50,7 +53,8 @@ class RequestsSender:
 def build_request(smarty_request):
     try:
         request = Request(url=smarty_request.url_prefix, params=smarty_request.parameters)
-        request.headers['User-Agent'] = "smartystreets (sdk:python@{})".format(version.__version__)
+        # request.headers['User-Agent'] = "smartystreets (sdk:python@{})".format(version.__version__)
+        request.headers['User-Agent'] = "smartystreets (sdk:python@{})".format(__version__)
         request.headers['Content-Type'] = smarty_request.content_type
         if smarty_request.referer:
             request.headers['Referer'] = smarty_request.referer

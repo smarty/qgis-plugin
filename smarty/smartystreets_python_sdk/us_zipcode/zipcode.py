@@ -1,4 +1,4 @@
-from .alternate_county import AlternateCounty
+# from .alternate_county import AlternateCounty
 
 
 class ZipCode:

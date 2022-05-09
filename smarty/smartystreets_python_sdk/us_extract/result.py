@@ -1,5 +1,5 @@
-from smartystreets_python_sdk.us_extract import Address
-from smartystreets_python_sdk.us_extract import Metadata
+# from . import Address
+# from . import Metadata
 
 
 class Result:

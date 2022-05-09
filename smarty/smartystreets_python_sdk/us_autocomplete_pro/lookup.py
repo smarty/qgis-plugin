@@ -1,4 +1,4 @@
-from smartystreets_python_sdk.us_autocomplete_pro import geolocation_type
+# from . import geolocation_type
 
 
 class Lookup:

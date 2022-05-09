@@ -1,4 +1,4 @@
-from smartystreets_python_sdk.exceptions import UnprocessableEntityError
+from ..exceptions import UnprocessableEntityError
 
 
 class Lookup:

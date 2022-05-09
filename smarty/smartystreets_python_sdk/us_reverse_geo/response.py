@@ -1,4 +1,4 @@
-from .result import Result
+# from . import Result
 
 
 class Response:

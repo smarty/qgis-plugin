@@ -1,7 +1,6 @@
-from smartystreets_python_sdk import Request
-from smartystreets_python_sdk.exceptions import SmartyException
-from smartystreets_python_sdk.us_extract import Result
-
+# from smartystreets_python_sdk import Request
+from ..exceptions import SmartyException
+# from . import Result
 
 class Client:
     def __init__(self, sender, serializer):

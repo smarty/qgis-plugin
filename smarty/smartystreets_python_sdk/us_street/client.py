@@ -1,5 +1,5 @@
-from smartystreets_python_sdk.us_street import Candidate
-from smartystreets_python_sdk import Request, Batch
+from .candidate import Candidate
+from .. import Request, Batch
 
 
 class Client:
