@@ -1173,11 +1173,12 @@ class Smarty:
             self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
             self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
 
-            # Set colorsx
+            # Set colors
             self.dlg.symbol_color_single.setColor(QColor(255, 0, 22))
             self.dlg.symbol_color.setColor(QColor(255, 0, 22))
 
             self.layers = self.refresh_layers()
+
 
         # show the dialog
         self.dlg.show()
