@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>737</width>
-    <height>1352</height>
+    <width>491</width>
+    <height>1152</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -60,6 +60,18 @@
        </item>
        <item row="0" column="0" colspan="5">
         <widget class="QTabWidget" name="tabWidget_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>179</height>
+          </size>
+         </property>
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
          </property>
@@ -258,6 +270,12 @@ border-radius: 4px;</string>
        </item>
        <item row="10" column="0" colspan="5">
         <widget class="QFrame" name="results">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="autoFillBackground">
           <bool>false</bool>
          </property>
@@ -273,6 +291,18 @@ border-radius: 4px;</string>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="0" alignment="Qt::AlignLeft">
            <widget class="QFrame" name="frame_2">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>250</height>
+             </size>
+            </property>
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
             </property>
@@ -879,16 +909,6 @@ border-radius: 4px;</string>
          </property>
         </widget>
        </item>
-       <item row="8" column="0" colspan="2">
-        <widget class="QLabel" name="label_13">
-         <property name="layoutDirection">
-          <enum>Qt::LeftToRight</enum>
-         </property>
-         <property name="text">
-          <string>Zoom In</string>
-         </property>
-        </widget>
-       </item>
        <item row="6" column="4">
         <widget class="QgsSpinBox" name="symbol_size_single">
          <property name="sizePolicy">
@@ -1085,7 +1105,7 @@ border-radius: 4px;</string>
          <attribute name="title">
           <string>CSV File</string>
          </attribute>
-         <widget class="QgsFileWidget" name="csv_file">
+         <widget class="QgsFileWidget" name="csv_file" native="true">
           <property name="geometry">
            <rect>
             <x>170</x>
@@ -1220,7 +1240,7 @@ border-radius: 4px;</string>
            <bool>true</bool>
           </property>
          </widget>
-         <widget class="QgsFileWidget" name="csv_file_output">
+         <widget class="QgsFileWidget" name="csv_file_output" native="true">
           <property name="geometry">
            <rect>
             <x>120</x>
@@ -1231,9 +1251,6 @@ border-radius: 4px;</string>
           </property>
           <property name="autoFillBackground">
            <bool>false</bool>
-          </property>
-          <property name="storageMode">
-           <enum>QgsFileWidget::SaveFile</enum>
           </property>
          </widget>
          <widget class="QLabel" name="label_14">
