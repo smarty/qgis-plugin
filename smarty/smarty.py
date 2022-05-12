@@ -24,7 +24,7 @@
 from calendar import c # FIXME: I don't think we are using these?
 from itertools import count
 from operator import add
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
 from qgis.PyQt.QtWidgets import QAction, QCompleter, QApplication
@@ -788,10 +788,10 @@ class Smarty:
 
     def meta_resize(self): # resize the dialogue box to show or hide the outputted metadata
         if self.dlg.meta_data.isChecked():
-            self.dlg.resize(586,1018)
+            # self.dlg.resize(586,1018)
             self.dlg.meta_data_results.setVisible(True)
         else:
-            self.dlg.resize(586,820)
+            # self.dlg.resize(586,820)
             self.dlg.meta_data_results.setVisible(False)
     
     def refresh_layers(self):
@@ -1178,6 +1178,8 @@ class Smarty:
             self.dlg.symbol_color.setColor(QColor(255, 0, 22))
 
             self.layers = self.refresh_layers()
+
+            self.dlg.setWindowFlags(Qt.WindowStaysOnTopHint)
 
 
         # show the dialog
