@@ -962,8 +962,10 @@ class Smarty:
     def resize_dialog(self): # Resize the dialogue box depending on which tab user is on (single address lookup vs batch lookup)
         if self.dlg.tabWidget.currentIndex() == 0:
             if self.dlg.tabWidget_3.currentIndex() == 1:
-                self.dlg.resize(586,506)
+                self.dlg.results.setVisible(False)
+                self.dlg.resize(586,300)
             else:
+                self.dlg.results.setVisible(False)
                 self.dlg.resize(586,690)
         else:
             self.dlg.resize(586,506)
