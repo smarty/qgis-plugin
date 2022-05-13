@@ -961,24 +961,11 @@ class Smarty:
     
     def resize_dialog(self): # Resize the dialogue box depending on which tab user is on (single address lookup vs batch lookup)
         if self.dlg.tabWidget.currentIndex() == 0:
-            if self.dlg.tabWidget_3.currentIndex() == 1:
+            if self.dlg.results.isVisible() == True:
+                self.iface.messageBar().pushMessage("asl;dkjf", "asldkgjh;a", level=Qgis.Success, duration=6)
+                # self.dlg.resize(586,400)
+                self.dlg.tabWidget.resize(400,400)
                 self.dlg.results.setVisible(False)
-                self.dlg.resize(586,300)
-            else:
-                self.dlg.results.setVisible(False)
-                self.dlg.resize(586,690)
-        else:
-            self.dlg.resize(586,506)
-    
-    def resize_dialog_batch(self): # Resize the dialogue box depending on which tab user is on (setting up csv vs setting up output features)
-        if self.dlg.tabWidget_3.currentIndex() == 0:
-            self.dlg.resize(586,506)
-            self.dlg.tabWidget_3.resize(521, 320)
-            self.dlg.frame.resize(541,340)
-        else:
-            self.dlg.resize(586,690)
-            self.dlg.tabWidget_3.resize(521, 501)
-            self.dlg.frame.resize(541,521)
     
     def add_csv(self):
         # Reset certain aspects of the dialogue
@@ -1151,7 +1138,7 @@ class Smarty:
             self.dlg.add_csv.clicked.connect(self.add_csv)
             self.dlg.add_tokens.clicked.connect(self.add_tokens) 
             self.dlg.tabWidget.tabBarClicked.connect(self.resize_dialog)
-            self.dlg.tabWidget_3.tabBarClicked.connect(self.resize_dialog_batch)
+            # self.dlg.tabWidget_3.tabBarClicked.connect(self.resize_dialog_batch)
 
             # Fill drop downs
             self.layers = self.refresh_layers()
