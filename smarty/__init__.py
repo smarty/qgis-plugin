@@ -33,21 +33,6 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-
-    # x = str(sys.executable) 
-    # currentPlatform = platform.system()
-
-    # if len(currentPlatform) == 0:
-    #     return
-
-    # if currentPlatform == 'Windows':
-    #     os.system("./install.bat")
-    # elif currentPlatform == 'Darwin':
-    #     process = subprocess.Popen(['/Applications/QGIS.app/Contents/MacOS/bin/python3','-m','pip', 'install', '--verbose', '--trusted-host=pypi.org','--trusted-host=pypi.python.org','--trusted-host=files.pythonhosted.org', 'smartystreets_python_sdk'], stdout=subprocess.PIPE)
-    # elif currentPlatform == 'Linux':
-    #     print("Linux")
-    # else:
-    #     print("Can't determine OS of user")
     
     from .smarty import Smarty
 

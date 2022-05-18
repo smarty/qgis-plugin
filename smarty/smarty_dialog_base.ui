@@ -312,7 +312,7 @@ border-radius: 4px;</string>
             <property name="maximumSize">
              <size>
               <width>16777215</width>
-              <height>250</height>
+              <height>500</height>
              </size>
             </property>
             <property name="frameShape">
@@ -1194,6 +1194,9 @@ border-radius: 4px;</string>
                    <property name="autoFillBackground">
                     <bool>false</bool>
                    </property>
+                   <property name="storageMode">
+                    <enum>QgsFileWidget::SaveFile</enum>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
@@ -1278,7 +1281,7 @@ border-radius: 4px;</string>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
-                  <height>115</height>
+                  <height>400</height>
                  </size>
                 </property>
                 <property name="layoutDirection">

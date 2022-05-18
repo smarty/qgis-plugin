@@ -39,9 +39,6 @@ import pip
 from .smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch, Request
 from .smartystreets_python_sdk.us_street import Lookup as StreetLookup
 from .smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
-# from .smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch, Request
-# from .smartystreets_python_sdk.us_street import Lookup as StreetLookup
-# from .smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
 #########
 
 # Initialize Qt resources from file resources.py
