@@ -46,26 +46,7 @@ class SmartyDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
-    def closeEvent(self, event):
-
-        self.save_dlg = QDialog()
-        self.save_dlg.setWindowTitle("ALERT")
-
-        title = QLabel("WARNING:", self.save_dlg)
-        title.setFont(QFont("Helvetica",weight=QFont.Bold))
-        title.setGeometry(10,10,100,10)
-        
-        message = QLabel("Geocoding inofrmation is currently contained on a temporary memory layer. Please make your layer permanent before closing QGIS.", self.save_dlg)
-        message.setGeometry(20,20, 300, 200)
-        message.setWordWrap(True)
-
-        self.save_dlg.show()
-
 
 FORM_CLASS_, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'smarty_dialog_base.ui'))
 
-class SaveDialog(QtWidgets.QDialog, FORM_CLASS_):
-    def __init__(self, parent=None):
-        super(SaveDialog, self).__init__(parent)
-        self.setupUi(self)

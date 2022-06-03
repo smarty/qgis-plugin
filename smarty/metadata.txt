@@ -10,7 +10,8 @@ version=0.4
 author=Smarty
 email=osgeo-it@smarty.com
 
-about=The goal of this plugin is to provide an easy way for QGIS users to geocode records and then display them on the map.
+about=Smarty’s QGIS Geocoding plugin allows you to interactively geocode US addresses on your QGIS maps. There are several geocoding plugins in QGIS to choose from, but Smarty's plugin is the easiest to use and the most accurate, with addresses being geocoded down to the rooftop and parcel level. Simply enter an address and let our plugin validate, geocode, and plot it on your map. It even uses our US Address Autocomplete product to help you avoid entering errant address information. While a subscription is not required to use the plugin, Smarty customers with a US Rooftop Geocoding subscription have the additional benefit of geocoding large batches of addresses.
+
 
 tracker=https://github.com/smartystreets/qgis-plugin/issues
 repository=https://github.com/smartystreets/qgis-plugin

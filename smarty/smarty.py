@@ -44,7 +44,7 @@ from .smartystreets_python_sdk.us_autocomplete_pro import Lookup as Autocomplete
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
-from .smarty_dialog import SmartyDialog, SaveDialog
+from .smarty_dialog import SmartyDialog
 from .utils import Utils
 import os.path
 import sys
@@ -732,8 +732,8 @@ class Smarty:
     def smarty_geo_link(self):  # Link to website if user clicks on button
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
     
-    def smarty_home_link(self):  # Link to website if user clicks on button
-        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding")
+    def smarty_documentation(self):  # Link to website if user clicks on button
+        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding") # FIXME: change to documentation page
 
     def smarty_help_link(self):  # Link to website if user clicks on button
         webbrowser.open("https://www.smarty.com/docs/sdk/python")
@@ -959,7 +959,6 @@ class Smarty:
     def resize_dialog(self): # Resize the dialogue box depending on which tab user is on (single address lookup vs batch lookup)
         if self.dlg.tabWidget.currentIndex() == 0:
             if self.dlg.results.isVisible() == True:
-                self.iface.messageBar().pushMessage("asl;dkjf", "asldkgjh;a", level=Qgis.Success, duration=6)
                 # self.dlg.resize(586,400)
                 self.dlg.tabWidget.resize(400,400)
                 self.dlg.results.setVisible(False)
@@ -1126,7 +1125,7 @@ class Smarty:
             self.dlg.single_lookup.clicked.connect(self.smarty_single)
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
-            self.dlg.smarty_link_help.clicked.connect(self.smarty_home_link)
+            self.dlg.smarty_link_help.clicked.connect(self.smarty_documentation)
             self.dlg.meta_data.clicked.connect(self.meta_resize) 
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
