@@ -91,6 +91,13 @@
          </property>
         </widget>
        </item>
+       <item row="10" column="0" colspan="4">
+        <widget class="QPushButton" name="visit_smarty">
+         <property name="text">
+          <string>Learn More</string>
+         </property>
+        </widget>
+       </item>
        <item row="5" column="4">
         <widget class="QComboBox" name="symbol_drop_down_single">
          <property name="sizePolicy">
@@ -212,6 +219,9 @@ border-radius: 4px;</string>
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
          <property name="autoFillBackground">
           <bool>false</bool>
@@ -1001,13 +1011,6 @@ border-radius: 4px;</string>
          </property>
          <property name="flat">
           <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="0" colspan="4">
-        <widget class="QPushButton" name="visit_smarty">
-         <property name="text">
-          <string>Learn More</string>
          </property>
         </widget>
        </item>
