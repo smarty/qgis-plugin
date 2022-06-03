@@ -733,10 +733,13 @@ class Smarty:
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
     
     def smarty_documentation(self):  # Link to website if user clicks on button
-        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding") # FIXME: change to documentation page
+        webbrowser.open("https://www.smarty.com/docs") # FIXME: change to documentation page
 
-    def smarty_help_link(self):  # Link to website if user clicks on button
-        webbrowser.open("https://www.smarty.com/docs/sdk/python")
+    def visit_smarty(self):  # Link to website if user clicks on button
+        webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding") 
+
+    # def smarty_help_link(self):  # Link to website if user clicks on button
+    #     webbrowser.open("https://www.smarty.com/docs/sdk/python")
 
     def set_symbol(self, color, symbol, size):
         # Set size of the symbol
@@ -1126,6 +1129,7 @@ class Smarty:
             self.dlg.batch_button.clicked.connect(self.smarty_batch)
             self.dlg.smarty_link_2.clicked.connect(self.smarty_geo_link)
             self.dlg.smarty_link_help.clicked.connect(self.smarty_documentation)
+            self.dlg.visit_smarty.clicked.connect(self.visit_smarty)
             self.dlg.meta_data.clicked.connect(self.meta_resize) 
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
