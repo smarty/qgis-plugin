@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>671</width>
-    <height>1147</height>
+    <height>1125</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -572,6 +572,21 @@ border-radius: 4px;</string>
              <enum>QFrame::Plain</enum>
             </property>
             <layout class="QGridLayout" name="gridLayout_4">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_20">
+               <property name="font">
+                <font>
+                 <family>Arial</family>
+                 <pointsize>14</pointsize>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>Results</string>
+               </property>
+              </widget>
+             </item>
              <item row="6" column="0" alignment="Qt::AlignRight">
               <widget class="QLabel" name="label_13">
                <property name="font">
@@ -651,8 +666,11 @@ border-radius: 4px;</string>
                  <bold>true</bold>
                 </font>
                </property>
+               <property name="toolTip">
+                <string>&lt;pre&gt;           Latitude&lt;/pre&gt;</string>
+               </property>
                <property name="text">
-                <string>Latitude:</string>
+                <string>&lt;p&gt;&lt;pre style=&quot;font-family: Arial; font-weight: bold;&quot;&gt;                            Latitude:&lt;/pre&gt;&lt;/p&gt;</string>
                </property>
               </widget>
              </item>
@@ -698,22 +716,28 @@ border-radius: 4px;</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_20">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>14</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
-               </property>
+             <item row="5" column="1">
+              <widget class="QLabel" name="zip_result">
                <property name="text">
-                <string>Results</string>
+                <string/>
                </property>
               </widget>
              </item>
-             <item row="1" column="4">
+             <item row="3" column="1">
+              <widget class="QLabel" name="city_result">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLabel" name="state_result">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
               <widget class="QLabel" name="summary_result">
                <property name="text">
                 <string/>
@@ -722,27 +746,6 @@ border-radius: 4px;</string>
              </item>
              <item row="2" column="1">
               <widget class="QLabel" name="address_result">
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QLabel" name="city_result">
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="3">
-              <widget class="QLabel" name="state_result">
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="2">
-              <widget class="QLabel" name="zip_result">
                <property name="text">
                 <string/>
                </property>
@@ -806,143 +809,113 @@ border-radius: 4px;</string>
              <enum>QFrame::Plain</enum>
             </property>
             <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0,0,0,0">
-             <item row="2" column="1" alignment="Qt::AlignLeft">
-              <widget class="QLabel" name="congressional_district_result">
+             <item row="4" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_25">
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_53">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;County FIPS:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>Residential/Commercial:</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_56">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Congressional District:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1" alignment="Qt::AlignLeft">
-              <widget class="QLabel" name="county_name_result">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_52">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;County Name:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_55">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Time Zone:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1" alignment="Qt::AlignLeft">
+             <item row="1" column="1">
               <widget class="QLabel" name="county_fips_result">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
                <property name="text">
                 <string/>
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_54">
+             <item row="2" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_23">
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Residential / Commercial:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>Congressional District:</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_57">
+             <item row="0" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_21">
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Daylight Savings Time:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>County Name:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_24">
+               <property name="font">
+                <font>
+                 <family>Arial</family>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>Time Zone:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="county_name_result">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_22">
+               <property name="font">
+                <font>
+                 <family>Arial</family>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>County FIPS:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_26">
+               <property name="font">
+                <font>
+                 <family>Arial</family>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>Daylight Savings Time:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="congressional_district_result">
+               <property name="text">
+                <string/>
                </property>
               </widget>
              </item>
              <item row="3" column="1">
               <widget class="QLabel" name="time_zone_result">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
                <property name="text">
                 <string/>
                </property>
@@ -950,12 +923,6 @@ border-radius: 4px;</string>
              </item>
              <item row="4" column="1">
               <widget class="QLabel" name="rdi_result">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
                <property name="text">
                 <string/>
                </property>
@@ -963,12 +930,6 @@ border-radius: 4px;</string>
              </item>
              <item row="5" column="1">
               <widget class="QLabel" name="dst_result">
-               <property name="font">
-                <font>
-                 <family>Arial</family>
-                 <pointsize>12</pointsize>
-                </font>
-               </property>
                <property name="text">
                 <string/>
                </property>
