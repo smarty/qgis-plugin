@@ -1397,6 +1397,9 @@ text: bold;</string>
                    <property name="autoFillBackground">
                     <bool>false</bool>
                    </property>
+                   <property name="storageMode">
+                    <enum>QgsFileWidget::SaveFile</enum>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
