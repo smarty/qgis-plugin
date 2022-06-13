@@ -332,7 +332,7 @@ class Smarty:
         time_zone = candidate.metadata.time_zone
         dst = candidate.metadata.obeys_dst 
 
-        self.dlg.resize(586,820)
+        self.dlg.resize(700,900)
         self.dlg.results.setVisible(True)
         
         # Set received API values on the dialogue box
@@ -1108,7 +1108,7 @@ class Smarty:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SmartyDialog()
-            self.dlg.resize(586, 506)
+            self.dlg.resize(700, 900)
 
             # Create a global settings variable         
             settings = QtCore.QSettings()
