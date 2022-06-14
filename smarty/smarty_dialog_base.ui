@@ -158,7 +158,7 @@
             <x>0</x>
             <y>0</y>
             <width>833</width>
-            <height>1158</height>
+            <height>1180</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_36">
@@ -436,19 +436,6 @@
                  <enum>QFrame::Plain</enum>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_3">
-                 <item row="0" column="0">
-                  <spacer name="horizontalSpacer_4">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
                  <item row="8" column="0">
                   <spacer name="verticalSpacer_2">
                    <property name="orientation">
@@ -496,19 +483,6 @@
                      <widget class="QLineEdit" name="single_address_id">
                       <property name="placeholderText">
                        <string>Point ID</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QCheckBox" name="id_check_box">
-                      <property name="maximumSize">
-                       <size>
-                        <width>30</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string/>
                       </property>
                      </widget>
                     </item>
@@ -763,6 +737,19 @@ text: bold;</string>
                    </property>
                    <property name="flat">
                     <bool>false</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0" alignment="Qt::AlignRight">
+                  <widget class="QCheckBox" name="id_check_box">
+                   <property name="maximumSize">
+                    <size>
+                     <width>30</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string/>
                    </property>
                   </widget>
                  </item>
@@ -1343,7 +1330,7 @@ text: bold;</string>
                   </widget>
                  </item>
                  <item row="0" column="1" colspan="2">
-                  <widget class="QgsFileWidget" name="csv_file">
+                  <widget class="QgsFileWidget" name="csv_file" native="true">
                    <property name="autoFillBackground">
                     <bool>false</bool>
                    </property>
@@ -1393,12 +1380,9 @@ text: bold;</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_11">
                  <item row="0" column="1">
-                  <widget class="QgsFileWidget" name="csv_file_output">
+                  <widget class="QgsFileWidget" name="csv_file_output" native="true">
                    <property name="autoFillBackground">
                     <bool>false</bool>
-                   </property>
-                   <property name="storageMode">
-                    <enum>QgsFileWidget::SaveFile</enum>
                    </property>
                   </widget>
                  </item>
