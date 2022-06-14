@@ -501,6 +501,7 @@ class Smarty:
             self.dlg.batch_button.setText('Process Batch')
 
         self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
+        self.value = 0
         self.layers = self.refresh_layers()
 
     def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, counter2):
