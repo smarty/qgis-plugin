@@ -23,7 +23,7 @@
 """
 from calendar import c # FIXME: I don't think we are using these?
 from itertools import count
-from operator import add
+from operator import add, truediv
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
@@ -1025,9 +1025,20 @@ class Smarty:
     
     def single_line_enable(self): # Enable certain parts of dialogue depending on whether the user is use a single line entry
         if self.dlg.single_line_box.isChecked():
-            self.dlg.batch_components_frame.setEnabled(False)
+            self.dlg.batch_address.setEnabled(True)
+            self.dlg.batch_city.setEnabled(False)
+            self.dlg.batch_state.setEnabled(False)
+            self.dlg.batch_zip.setEnabled(False)
+            self.dlg.city_label_batch.setEnabled(False)
+            self.dlg.state_label_batch.setEnabled(False)
+            self.dlg.zip_label_batch.setEnabled(False)
         else:
-            self.dlg.batch_components_frame.setEnabled(True)
+            self.dlg.batch_city.setEnabled(True)
+            self.dlg.batch_state.setEnabled(True)
+            self.dlg.batch_zip.setEnabled(True)
+            self.dlg.city_label_batch.setEnabled(True)
+            self.dlg.state_label_batch.setEnabled(True)
+            self.dlg.zip_label_batch.setEnabled(True)
     
     def reset_csv(self):
         # Reset all aspects of the dialogue associated with adding/setting the input csv file

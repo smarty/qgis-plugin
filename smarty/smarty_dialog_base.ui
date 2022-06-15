@@ -1507,14 +1507,14 @@ font: bold;</string>
                   </widget>
                  </item>
                  <item row="2" column="0">
-                  <widget class="QLabel" name="label_37">
+                  <widget class="QLabel" name="city_label_batch">
                    <property name="text">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;City&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                   </widget>
                  </item>
                  <item row="4" column="0">
-                  <widget class="QLabel" name="label_39">
+                  <widget class="QLabel" name="zip_label_batch">
                    <property name="text">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;ZIP Code&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
@@ -1527,7 +1527,7 @@ font: bold;</string>
                   <widget class="QComboBox" name="batch_city"/>
                  </item>
                  <item row="3" column="0">
-                  <widget class="QLabel" name="label_38">
+                  <widget class="QLabel" name="state_label_batch">
                    <property name="text">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;State&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
