@@ -228,6 +228,7 @@ class Smarty:
 
         # Reset everytime so metadata is not shown initially 
         self.dlg.meta_data.setChecked(False)
+        self.meta_resize()
 
         # Set up the API keys for the US Street Address API
         key = '119911182158064178' 
@@ -369,7 +370,7 @@ class Smarty:
         if self.dlg.new_layer_radio.isChecked() and self.dlg.id_check_box.isChecked():
             feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
             county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip]) 
-        elif self.dlg.existing_layer_radio.isChecked() and self.dlg.single_frame_id.isEnabled():
+        elif self.dlg.existing_layer_radio.isChecked() and len(self.dlg.single_address_id.text()) > 0: 
             feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
             county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip]) 
         else:
@@ -734,7 +735,7 @@ class Smarty:
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
     
     def smarty_documentation(self):  # Link to website if user clicks on button
-        webbrowser.open("https://www.smarty.com/docs") # FIXME: change to documentation page
+        webbrowser.open("https://www.smarty.com/docs/qgis-geocoding-plugin-us-address") 
 
     def visit_smarty(self):  # Link to website if user clicks on button
         webbrowser.open("https://www.smarty.com/products/us-rooftop-geocoding") 
@@ -771,7 +772,7 @@ class Smarty:
         credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text()) 
         client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
         lookup = StreetLookup()
-        lookup.street = "484 W Bulldog Blvd, Provo, UT 84604" # FIXME: maybe put a different address... currently provo chic-fil-a
+        lookup.street = "484 W Bulldog Blvd, Provo, UT 84604" 
         # Send one lookup to make sure they are authorized to use send batches to Smarty API
         try:
             client.send_lookup(lookup)
@@ -1021,7 +1022,7 @@ class Smarty:
         if self.dlg.id_box.isChecked():
             self.dlg.batch_id.setEnabled(True)
         else:
-            self.dlg.batch_id.setEnabled(False) # TODO: make sure that the reset isn't triggering other function
+            self.dlg.batch_id.setEnabled(False) 
     
     def single_line_enable(self): # Enable certain parts of dialogue depending on whether the user is use a single line entry
         if self.dlg.single_line_box.isChecked():
@@ -1097,7 +1098,7 @@ class Smarty:
             chosen_layer = self.layers[index] 
             
             field_name = 'id'
-            field_index = chosen_layer.fields().indexFromName(field_name) # TODO: python error here, after we delete the layers that populate the drop down.. maybe refill it everytime someone clicks on the existing layer?
+            field_index = chosen_layer.fields().indexFromName(field_name) 
 
             if field_index == -1:
                 self.dlg.single_frame_id.setDisabled(True)
