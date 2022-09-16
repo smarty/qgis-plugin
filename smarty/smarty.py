@@ -569,21 +569,31 @@ class Smarty:
             cong_dist = candidate.metadata.congressional_district
             time_zone = candidate.metadata.time_zone
             dst = candidate.metadata.obeys_dst
+
+            if longitude == None or latitude == None:
+                longitude = 0
+                latitude = 0
+
             # Create outputted lat/long point
             point_out = QgsPointXY(longitude, latitude)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+
             # Handle success of address lookup
             success = Utils.handle_success(candidates) 
+
             # Set attributes for associated layer
             feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
                             county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
+
             # Set symbol features
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
+
             # Add symbol to created layer    
             layer_out.dataProvider().addFeature(feature)
             layer_out.renderer().setSymbol(symbol)     
             layer_out.updateExtents()
+
         # Reset certain areas of dlg
         self.dlg.layer_name_batch.setText('')
         return layer_out
@@ -710,15 +720,23 @@ class Smarty:
             cong_dist = candidate.metadata.congressional_district
             time_zone = candidate.metadata.time_zone
             dst = candidate.metadata.obeys_dst
+
+            if longitude == None or latitude == None:
+                longitude = 0
+                latitude = 0
+
             # Set up lat/long point
             point_out = QgsPointXY(longitude, latitude)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+
             # Handle the success of the API call
             success = Utils.handle_success(candidates)
+
             # Set up the attributes associated with the new layer
             feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
                             county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
+
             # Set symbol and features for lat/long point
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
 
