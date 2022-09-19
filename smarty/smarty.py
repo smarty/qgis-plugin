@@ -570,14 +570,14 @@ class Smarty:
             time_zone = candidate.metadata.time_zone
             dst = candidate.metadata.obeys_dst
 
+            feature = QgsFeature()
             if longitude == None or latitude == None:
                 longitude = 0
                 latitude = 0
-
-            # Create outputted lat/long point
-            point_out = QgsPointXY(longitude, latitude)
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+            else: 
+                # Create outputted lat/long point
+                point_out = QgsPointXY(longitude, latitude)
+                feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
             # Handle success of address lookup
             success = Utils.handle_success(candidates) 
@@ -721,14 +721,14 @@ class Smarty:
             time_zone = candidate.metadata.time_zone
             dst = candidate.metadata.obeys_dst
 
+            feature = QgsFeature()
             if longitude == None or latitude == None:
                 longitude = 0
                 latitude = 0
-
-            # Set up lat/long point
-            point_out = QgsPointXY(longitude, latitude)
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+            else: 
+                # Create outputted lat/long point
+                point_out = QgsPointXY(longitude, latitude)
+                feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
             # Handle the success of the API call
             success = Utils.handle_success(candidates)
