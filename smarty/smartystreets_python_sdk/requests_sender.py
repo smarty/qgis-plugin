@@ -53,8 +53,7 @@ class RequestsSender:
 def build_request(smarty_request):
     try:
         request = Request(url=smarty_request.url_prefix, params=smarty_request.parameters)
-        # request.headers['User-Agent'] = "smartystreets (sdk:python@{})".format(version.__version__)
-        request.headers['User-Agent'] = "smartystreets (QGIS-sdk:python@{})".format(__version__)
+        request.headers['User-Agent'] = "smartystreets (qgis@{})".format(__version__)
         request.headers['Content-Type'] = smarty_request.content_type
         if smarty_request.referer:
             request.headers['Referer'] = smarty_request.referer
