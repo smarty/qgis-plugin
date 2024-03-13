@@ -879,8 +879,8 @@ class Smarty:
         text_format.setBackground(background_color )
         text_format.setSize(15)
         label_settings.setFormat(text_format)
-        label_settings.placement = 1
-        label_settings.quadOffset = 7
+        label_settings.placement = Qgis.LabelPlacement.OverPoint
+        label_settings.quadOffset = Qgis.LabelQuadrantPosition.Below
         label_settings.xOffset = 3
         label_settings.yOffset = 7
 
