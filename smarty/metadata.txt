@@ -5,9 +5,9 @@
 [general]
 name=Smarty
 qgisMinimumVersion=3.0
-qgisMaximumVersion=3.26
+qgisMaximumVersion=3.36
 description=Smarty Geocoding QGIS Plugin
-version=1.0.5
+version=1.0.6
 author=Smarty
 email=osgeo-it@smarty.com
 
