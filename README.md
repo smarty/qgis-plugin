@@ -8,9 +8,3 @@ You may have noticed this page is curiously sparse. Don't panic, there's [docume
 
 
 [Apache 2.0 License](src/main/resources/LICENSE.txt)
-
----
-
-[![asciicast](https://asciinema.org/a/122130.png)](https://asciinema.org/a/122130)
-
----
