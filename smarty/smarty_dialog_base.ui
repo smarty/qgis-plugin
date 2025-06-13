@@ -224,6 +224,19 @@
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_34">
                   <item>
+                   <widget class="QCheckBox" name="use_autocomplete">
+                    <property name="enabled">
+                     <bool>true</bool>
+                    </property>
+                    <property name="text">
+                     <string>Use Autocomplete</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
                    <widget class="QLineEdit" name="single_address_lookup">
                     <property name="styleSheet">
                      <string notr="true"/>
@@ -724,10 +737,10 @@
                    </property>
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(10, 95, 255);
-color: white;
-border-width: 4px;
-border-radius: 4px;
-text: bold;</string>
+                     color: white;
+                     border-width: 4px;
+                     border-radius: 4px;
+                     text: bold;</string>
                    </property>
                    <property name="text">
                     <string>Process Lookup</string>
@@ -1465,10 +1478,10 @@ text: bold;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">background-color: rgb(10, 95, 255);
-color: white;
-border-width: 4px;
-border-radius: 4px;
-font: bold;</string>
+                  color: white;
+                  border-width: 4px;
+                  border-radius: 4px;
+                  font: bold;</string>
                 </property>
                 <property name="text">
                  <string>Process Batch</string>

@@ -934,6 +934,9 @@ class Smarty:
         return layer_out
    
     def autocomplete(self):
+        if not self.dlg.use_autocomplete.isChecked():
+            return
+
         key = '119911182158064178' # FIXME: secret key id --> change name to secret_key_id
         hostname = 'qgis_smarty' # secret key token --> secret_key_token
 
@@ -1075,6 +1078,11 @@ class Smarty:
 
         self.dlg.display_output_box.setChecked(True)
 
+    def autocomplete_state(self):
+        if not self.dlg.use_autocomplete.isChecked():
+            self.autocomplete_model = QStandardItemModel()
+            self.dlg.single_address_lookup.setCompleter(None)
+
     def handle_success(self, result): # Handle and determine the success of the API request
         if Utils.is_valid(result):
             return "valid_address"
@@ -1185,13 +1193,15 @@ class Smarty:
             # Set default checked box
             self.dlg.display_output_box.setChecked(True)
             self.dlg.zoom_in.setChecked(True)
-            
+            self.dlg.use_autocomplete.setChecked(True)
+
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
             self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
             self.dlg.id_box.stateChanged.connect(self.enable_id_box) 
             self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
+            self.dlg.use_autocomplete.stateChanged.connect(self.autocomplete_state)
 
             # Set colors
             self.dlg.symbol_color_single.setColor(QColor(255, 0, 22))
