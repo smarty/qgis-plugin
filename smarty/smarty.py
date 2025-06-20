@@ -82,7 +82,7 @@ class Smarty:
             'Smarty_{}.qm'.format(locale))
         
         self.settings = QSettings()
-        self.counter2 = 0
+        self.id_counter = 0
         self.layers = None
         self.value = 0
         self.length = 0
@@ -476,12 +476,12 @@ class Smarty:
                 counter += 1
                 # Once the batch is full we will send our API call in another function
                 if batch.is_full():
-                    self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+                    self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
                     batch.clear()
                     counter = 0
             # if the batch is not full but still has addresses on it we still want to process those addresses
             if len(batch) != 0:
-                self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2) 
+                self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
             
             if self.dlg.display_output_box.isChecked():
                 # Zoom into the extents of the newly created layer
@@ -505,7 +505,7 @@ class Smarty:
         self.value = 0
         self.layers = self.refresh_layers()
 
-    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, counter2):
+    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, id_counter):
         # Set up the progress bar to show user progress of batch lookups
         self.value += 100      
         if self.value < self.length:
@@ -528,8 +528,8 @@ class Smarty:
             i_zip = str(df.at[i,zip])
             # Use chosen ID or create ID for each address
             if self.dlg.id_box.isChecked() == False:
-                counter2 += 1 
-                id = counter2
+                id_counter += 1
+                id = id_counter
             else: 
                 id = str(df.at[i,id_column_name])
             # Set address/point label
@@ -596,7 +596,7 @@ class Smarty:
 
         # Reset certain areas of dlg
         self.dlg.layer_name_batch.setText('')
-        return layer_out
+        return id_counter
  
     def freeform_batch(self, df, id_column_name):
         address = self.dlg.batch_address.currentText()
@@ -631,12 +631,12 @@ class Smarty:
             counter += 1
             # Process the lookup if the batch is full 
             if batch.is_full():
-                self.process_freeform_batch(df, id_column_name, address, layer_out, client, batch, self.counter2)
+                self.id_counter = self.process_freeform_batch(df, id_column_name, address, layer_out, client, batch, self.id_counter)
                 batch.clear()
                 counter = 0
         # If the batch is not full but contians address process the batch 
         if len(batch) != 0:
-            self.process_freeform_batch(df, id_column_name, address, layer_out, client, batch, self.counter2) 
+            self.id_counter = self.process_freeform_batch(df, id_column_name, address, layer_out, client, batch, self.id_counter)
         if self.dlg.display_output_box.isChecked():
             # Zoom to the extents of the created layer
             canvas = self.iface.mapCanvas() 
@@ -655,7 +655,7 @@ class Smarty:
         self.enable_single_id_box()
         return df
     
-    def process_freeform_batch(self, df, id_column_name, address, layer_out, client, batch, counter2):
+    def process_freeform_batch(self, df, id_column_name, address, layer_out, client, batch, id_counter):
         self.value += 100
         # Update the progress bar to infrom the user the progress of their batch lookup
         if self.value < self.length:
@@ -678,8 +678,8 @@ class Smarty:
             i_zip = ''
             # Create an ID for each Address or use ID user provided
             if self.dlg.id_box.isChecked() == False:
-                counter2 += 1 
-                id = counter2
+                id_counter += 1
+                id = id_counter
             else: 
                 id = str(df.at[i,id_column_name])
             # Set lat/long label 
@@ -747,7 +747,7 @@ class Smarty:
             layer_out.updateExtents()
             # Reset certain areas of the dialogue box
             self.dlg.layer_name_batch.setText('')
-        return layer_out
+        return id_counter
 
     def smarty_geo_link(self):  # Link to website if user clicks on button
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
