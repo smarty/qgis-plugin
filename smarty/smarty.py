@@ -84,8 +84,8 @@ class Smarty:
         self.settings = QSettings()
         self.counter2 = 0
         self.layers = None
-        self.value = 0
-        self.length = 0
+        self.lookup_progress = 0
+        self.number_of_lookups_in_batch = 0
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -437,7 +437,7 @@ class Smarty:
 
         df.insert(0, '----', '')
 
-        self.length = df.shape[0]
+        self.number_of_lookups_in_batch = df.shape[0]
 
         # Process the csv and pandas dataframe
         address = self.dlg.batch_address.currentText()
@@ -479,6 +479,7 @@ class Smarty:
                 self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
                 batch.clear()
                 counter = 0
+
         # if the batch is not full but still has addresses on it we still want to process those addresses
         if len(batch) != 0:
             self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
@@ -502,36 +503,33 @@ class Smarty:
         self.dlg.batch_button.setText('Process Batch')
 
         self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
-        self.value = 0
+        self.lookup_progress = 0
         self.layers = self.refresh_layers()
 
-    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, counter2):
-        # Set up the progress bar to show user progress of batch lookups
-        self.value += 100
-        if self.value < self.length:
-            percent = self.value / self.length
-            self.dlg.batch_button.setStyleSheet('background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop: 0 #0a60ff, stop: ' + str(percent) + ' #0a60ff, stop: ' + str(percent+ .01) + ' rgba(255, 0, 0, 0), stop: 1 #ccdeff)')
-            str_percent = str(percent)
-            self.dlg.batch_button.setText('Processing %' + str_percent[2:4])
-            QApplication.processEvents()
+    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, id_counter):
         # Send the batch API call
         try:
             client.send_batch(batch)
         except exceptions.SmartyException as err: # 401 ERROR
             self.iface.messageBar().pushMessage("Error: ", str(err), level=Qgis.Critical, duration=6)
-            return
+            return None
+
         # Enumerate over the returned values on the batch
         for i, lookup in enumerate(batch):
+            self.update_progress_bar()
+
             i_address = str(df.at[i,address])
             i_city = str(df.at[i,city])
             i_state = str(df.at[i,state])
             i_zip = str(df.at[i,zip])
+
             # Use chosen ID or create ID for each address
             if not self.dlg.primary_key_checkbox.isChecked():
-                counter2 += 1
-                id = counter2
+                id_counter += 1
+                lookup_id = id_counter
             else:
-                id = str(df.at[i,id_column_name])
+                lookup_id = str(df.at[i,id_column_name])
+
             # Set address/point label
             if self.dlg.batch_point_label.currentText() == 'None':
                 label = ''
@@ -540,51 +538,46 @@ class Smarty:
                 layer_out = self.set_label_batch(layer_out)
 
             candidates = lookup.result
-            # If there are no result from the API on this particular address we will output the address the API received
-            if len(candidates) == 0:
-                self.iface.messageBar().pushMessage('No Match for given address. ' + str(df.at[i,address]) + ' ' + str(df.at[i,city]) + ' ' + str(df.at[i,state]))
-                address_result = i_address
-                city_result = i_city
-                state_result = i_state
-                zip_result = i_zip
-                feature.setAttributes([id, address_result, '', '', city_result, state_result, zip_result, '', '', '',
-                                       '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
-                continue
-
-            candidate = candidates[0]
-            # Receive all API information
-            longitude = candidate.metadata.longitude
-            latitude = candidate.metadata.latitude
-            address_result = self.set_address(candidate)
-            longitude = candidate.metadata.longitude
-            latitude = candidate.metadata.latitude
-            city_result = candidate.components.city_name
-            state_result = candidate.components.state_abbreviation
-            zip_result = candidate.components.zipcode
-            zip_4 = candidate.components.plus4_code
-            precision = candidate.metadata.precision
-            county = candidate.metadata.county_name
-            county_fips = candidate.metadata.county_fips
-            rdi = candidate.metadata.rdi
-            cong_dist = candidate.metadata.congressional_district
-            time_zone = candidate.metadata.time_zone
-            dst = candidate.metadata.obeys_dst
 
             feature = QgsFeature()
-            if longitude is None or latitude is None:
-                longitude = 0
-                latitude = 0
+
+            # If there are no result from the API on this particular address we will output the address the API received.
+            if len(candidates) == 0:
+                self.iface.messageBar().pushMessage('No Match for given address: ' + str(df.at[i,address]) + ' ' + str(df.at[i,city]) + ' ' + str(df.at[i,state]), duration=6, level=Qgis.Critical)
+                feature.setAttributes([lookup_id, i_address, '', '', i_city, i_state, i_zip, '', '', '',
+                                       '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
             else:
-                # Create outputted lat/long point
-                point_out = QgsPointXY(longitude, latitude)
-                feature.setGeometry(QgsGeometry.fromPointXY(point_out))
+                # Get all the information from this lookup's top candidate
+                candidate = candidates[0]
+                address_result = self.set_address(candidate)
+                longitude = candidate.metadata.longitude
+                latitude = candidate.metadata.latitude
+                city_result = candidate.components.city_name
+                state_result = candidate.components.state_abbreviation
+                zip_result = candidate.components.zipcode
+                zip_4 = candidate.components.plus4_code
+                precision = candidate.metadata.precision
+                county = candidate.metadata.county_name
+                county_fips = candidate.metadata.county_fips
+                rdi = candidate.metadata.rdi
+                cong_dist = candidate.metadata.congressional_district
+                time_zone = candidate.metadata.time_zone
+                dst = candidate.metadata.obeys_dst
 
-            # Handle success of address lookup
-            success = Utils.handle_success(candidates)
+                if longitude is None or latitude is None:
+                    longitude = 0
+                    latitude = 0
+                else:
+                    # Create outputted lat/long point
+                    point_out = QgsPointXY(longitude, latitude)
+                    feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
-            # Set attributes for associated layer
-            feature.setAttributes([id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
-                                   county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
+                # Handle success of address lookup
+                success = Utils.handle_success(candidates)
+
+                # Set attributes for associated layer
+                feature.setAttributes([lookup_id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
+                                       county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
 
             # Set symbol features
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
@@ -597,6 +590,15 @@ class Smarty:
         # Reset certain areas of dlg
         self.dlg.layer_name_batch.setText('')
         return layer_out
+
+    def update_progress_bar(self):
+        self.lookup_progress += 1
+        if self.lookup_progress < self.number_of_lookups_in_batch:
+            percent = self.lookup_progress / self.number_of_lookups_in_batch
+            self.dlg.batch_button.setStyleSheet('background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop: 0 #0a60ff, stop: ' + str(percent) + ' #0a60ff, stop: ' + str(percent+ .01) + ' rgba(255, 0, 0, 0), stop: 1 #ccdeff)')
+            str_percent = str(percent)
+            self.dlg.batch_button.setText('Processing %' + str_percent[2:4])
+            QApplication.processEvents()
 
     def smarty_geo_link(self):  # Link to website if user clicks on button
         webbrowser.open("https://www.smarty.com/pricing/us-rooftop-geocoding")
