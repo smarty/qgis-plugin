@@ -898,30 +898,12 @@ class Smarty:
         else:
             self.dlg.batch_id.setEnabled(False)
 
-    def single_line_enable(self): # Enable certain parts of dialogue depending on whether the user is use a single line entry
-        if self.dlg.single_line_box.isChecked():
-            self.dlg.batch_address.setEnabled(True)
-            self.dlg.batch_city.setEnabled(False)
-            self.dlg.batch_state.setEnabled(False)
-            self.dlg.batch_zip.setEnabled(False)
-            self.dlg.city_label_batch.setEnabled(False)
-            self.dlg.state_label_batch.setEnabled(False)
-            self.dlg.zip_label_batch.setEnabled(False)
-        else:
-            self.dlg.batch_city.setEnabled(True)
-            self.dlg.batch_state.setEnabled(True)
-            self.dlg.batch_zip.setEnabled(True)
-            self.dlg.city_label_batch.setEnabled(True)
-            self.dlg.state_label_batch.setEnabled(True)
-            self.dlg.zip_label_batch.setEnabled(True)
-
     def reset_csv(self):
         # Reset all aspects of the dialogue associated with adding/setting the input csv file
         self.dlg.csv_file.setFilePath(' ')
         self.dlg.csv_file_output.setFilePath(' ')
 
         self.dlg.primary_key_checkbox.setChecked(False)
-        self.dlg.single_line_box.setChecked(False)
         self.dlg.batch_id.clear()
         self.dlg.batch_address.clear()
         self.dlg.batch_city.clear()
@@ -1059,7 +1041,6 @@ class Smarty:
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
             self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
             self.dlg.primary_key_checkbox.stateChanged.connect(self.enable_id_box)
-            self.dlg.single_line_box.stateChanged.connect(self.single_line_enable)
             self.dlg.use_autocomplete.stateChanged.connect(self.autocomplete_state)
 
             # Set colors
