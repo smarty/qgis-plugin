@@ -82,7 +82,7 @@ class Smarty:
             'Smarty_{}.qm'.format(locale))
 
         self.settings = QSettings()
-        self.counter2 = 0
+        self.id_counter = 0
         self.layers = None
         self.lookup_progress = 0
         self.number_of_lookups_in_batch = 0
@@ -468,6 +468,7 @@ class Smarty:
         batch = Batch()
 
         counter = 0
+        self.id_counter = 0
 
         process_batch_error = False
         # Iterate over every row of the pandas dataframe to set up the batch lookup
@@ -482,7 +483,7 @@ class Smarty:
             counter += 1
             # Once the batch is full we will send our API call in another function
             if batch.is_full():
-                lookup_error = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+                lookup_error, self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
                 if lookup_error:
                     process_batch_error = True
                 batch.clear()
@@ -490,7 +491,7 @@ class Smarty:
 
         # if the batch is not full but still has addresses on it we still want to process those addresses
         if len(batch) != 0:
-            lookup_error = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+            lookup_error, self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
             if lookup_error:
                 process_batch_error = True
 
@@ -507,7 +508,7 @@ class Smarty:
             self.layers = self.refresh_layers()
 
         self.output_csv(layer_out)
-        self.enable_single_id_box()
+        # self.enable_single_id_box()
 
         self.dlg.batch_button.setStyleSheet('background-color: rgb(10, 95, 255);color: white;border-width: 4px;border-radius: 4px;')
         self.dlg.batch_button.setText('Process Batch')
@@ -607,7 +608,7 @@ class Smarty:
 
         # Reset certain areas of dlg
         self.dlg.layer_name_batch.setText('')
-        return invalid_lookup_occured
+        return invalid_lookup_occured, id_counter
 
     def update_progress_bar(self):
         self.lookup_progress += 1
