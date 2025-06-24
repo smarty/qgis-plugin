@@ -87,6 +87,10 @@ class Smarty:
         self.lookup_progress = 0
         self.number_of_lookups_in_batch = 0
 
+        self.previous_batch_city_index = 0
+        self.previous_batch_state_index = 0
+        self.previous_batch_zip_index = 0
+
         if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
@@ -428,6 +432,7 @@ class Smarty:
 
         # Read the csv into a pandas dataframe
         df = pd.read_csv(self.dlg.csv_file.filePath())
+
         # Check is user wants to use their own Address ID
         if self.dlg.primary_key_checkbox.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
@@ -444,7 +449,6 @@ class Smarty:
         city = self.dlg.batch_city.currentText()
         state = self.dlg.batch_state.currentText()
         zip = self.dlg.batch_zip.currentText()
-
 
         project = QgsProject.instance()
         # Create new VectorLayer to output results on
@@ -464,6 +468,8 @@ class Smarty:
         batch = Batch()
 
         counter = 0
+
+        process_batch_error = False
         # Iterate over every row of the pandas dataframe to set up the batch lookup
         for _, row in df.iterrows():
             batch.add(StreetLookup())
@@ -476,13 +482,17 @@ class Smarty:
             counter += 1
             # Once the batch is full we will send our API call in another function
             if batch.is_full():
-                self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+                lookup_error = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+                if lookup_error:
+                    process_batch_error = True
                 batch.clear()
                 counter = 0
 
         # if the batch is not full but still has addresses on it we still want to process those addresses
         if len(batch) != 0:
-            self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+            lookup_error = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.counter2)
+            if lookup_error:
+                process_batch_error = True
 
         if self.dlg.display_output_box.isChecked():
             # Zoom into the extents of the newly created layer
@@ -502,11 +512,17 @@ class Smarty:
         self.dlg.batch_button.setStyleSheet('background-color: rgb(10, 95, 255);color: white;border-width: 4px;border-radius: 4px;')
         self.dlg.batch_button.setText('Process Batch')
 
-        self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
+        if not process_batch_error:
+            self.iface.messageBar().pushMessage("Batch processed successfully", level=Qgis.Success, duration=6)
+        else:
+            self.iface.messageBar().pushMessage("One or more addresses in the batch could not be matched to a valid address.", level=Qgis.Critical, duration=6)
+
         self.lookup_progress = 0
         self.layers = self.refresh_layers()
 
     def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, id_counter):
+        invalid_lookup_occured = False
+
         # Send the batch API call
         try:
             client.send_batch(batch)
@@ -523,12 +539,13 @@ class Smarty:
             i_state = str(df.at[i,state])
             i_zip = str(df.at[i,zip])
 
-            # Use chosen ID or create ID for each address
-            if not self.dlg.primary_key_checkbox.isChecked():
+            # Set the primary key for this lookup
+            if self.dlg.batch_id.currentIndex() == 0: # Default primary key
                 id_counter += 1
                 lookup_id = id_counter
             else:
-                lookup_id = str(df.at[i,id_column_name])
+                lookup_id = str(df.at[i, id_column_name])
+
 
             # Set address/point label
             if self.dlg.batch_point_label.currentText() == 'None':
@@ -546,6 +563,7 @@ class Smarty:
                 self.iface.messageBar().pushMessage('No Match for given address: ' + str(df.at[i,address]) + ' ' + str(df.at[i,city]) + ' ' + str(df.at[i,state]), duration=6, level=Qgis.Critical)
                 feature.setAttributes([lookup_id, i_address, '', '', i_city, i_state, i_zip, '', '', '',
                                        '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
+                invalid_lookup_occured = True
             else:
                 # Get all the information from this lookup's top candidate
                 candidate = candidates[0]
@@ -589,7 +607,7 @@ class Smarty:
 
         # Reset certain areas of dlg
         self.dlg.layer_name_batch.setText('')
-        return layer_out
+        return invalid_lookup_occured
 
     def update_progress_bar(self):
         self.lookup_progress += 1
@@ -863,34 +881,40 @@ class Smarty:
         # Create pandas dataframe from the given csv
         df = pd.read_csv(self.dlg.csv_file.filePath())
         # Create and populate downs with the column names
-        fields = df.columns.values.tolist()
+        csvColumns = df.columns.values.tolist()
 
-        fields.insert(0,'----')
+        csvColumns.insert(0,'----')
+        self.dlg.batch_address.addItems(csvColumns)
+        self.dlg.batch_city.addItems(csvColumns)
+        self.dlg.batch_state.addItems(csvColumns)
+        self.dlg.batch_zip.addItems(csvColumns)
+        self.dlg.batch_point_label.addItems(csvColumns)
 
-        self.dlg.batch_address.addItems(fields)
-        self.dlg.batch_city.addItems(fields)
-        self.dlg.batch_state.addItems(fields)
-        self.dlg.batch_zip.addItems(fields)
-        self.dlg.batch_id.addItems(fields)
-        fields.insert(0,"None")
-        fields.remove('----')
+        # Primary key drop down has a Default option
+        csvColumns.insert(0,"Default")
+        csvColumns.remove('----')
+        self.dlg.batch_id.addItems(csvColumns)
 
-        self.dlg.batch_point_label.addItems(fields)
         # Auto populate drop downs with the most intuitive column
-        counter = 0
-        for field in fields:
-            field = field.lower()
-            if field == 'address' or field == 'street' or field == 'addr':
-                self.dlg.batch_address.setCurrentIndex(counter)
-            elif field == 'city':
-                self.dlg.batch_city.setCurrentIndex(counter)
-            elif field == 'state' or field == 'st':
-                self.dlg.batch_state.setCurrentIndex(counter)
-            elif field == 'zip' or field == 'zipcode' or field == 'zip_code' or field == 'zip code':
-                self.dlg.batch_zip.setCurrentIndex(counter)
-            counter +=1
+        for i, field in enumerate(csvColumns):
+            field = field.lower().strip()
 
-    def enable_id_box(self): # Enable certain parts of dialogue for adding an address ID
+            if field == 'address' or field == 'street' or field == 'addr':
+                self.dlg.batch_address.setCurrentIndex(i)
+            elif field == 'city':
+                self.dlg.batch_city.setCurrentIndex(i)
+            elif field == 'state' or field == 'st':
+                self.dlg.batch_state.setCurrentIndex(i)
+            elif field == 'zip' or field == 'zipcode' or field == 'zip_code' or field == 'zip code' or 'postal code' or 'postal':
+                self.dlg.batch_zip.setCurrentIndex(i)
+
+        self.previous_batch_city_index = self.dlg.batch_city.currentIndex()
+        self.previous_batch_state_index = self.dlg.batch_state.currentIndex()
+        self.previous_batch_zip_index = self.dlg.batch_zip.currentIndex()
+
+        self.set_single_line_checkbox()
+
+    def set_primary_key_checkbox(self): # Enable certain parts of dialogue for adding an address ID
         if len(self.dlg.csv_file.filePath()) == 0:
             self.iface.messageBar().pushMessage("Error: ", "Please select a file path", level=Qgis.Critical, duration=6)
             self.dlg.primary_key_checkbox.setChecked(False)
@@ -899,12 +923,45 @@ class Smarty:
             self.dlg.batch_id.setEnabled(True)
         else:
             self.dlg.batch_id.setEnabled(False)
+            self.dlg.batch_id.setCurrentIndex(0)
+
+    def set_single_line_checkbox(self): # Gray out and set certain parts of dialog so that only the Address part is active
+        if self.dlg.single_line_box.isChecked():
+            self.dlg.batch_address.setEnabled(True)
+            self.dlg.batch_city.setEnabled(False)
+            self.dlg.batch_state.setEnabled(False)
+            self.dlg.batch_zip.setEnabled(False)
+            self.dlg.city_label_batch.setEnabled(False)
+            self.dlg.state_label_batch.setEnabled(False)
+            self.dlg.zip_label_batch.setEnabled(False)
+
+            # Save previous address component settings
+            self.previous_batch_city_index = self.dlg.batch_city.currentIndex()
+            self.previous_batch_state_index = self.dlg.batch_state.currentIndex()
+            self.previous_batch_zip_index = self.dlg.batch_zip.currentIndex()
+
+            # Set address components to the zeroth index
+            self.dlg.batch_city.setCurrentIndex(0)
+            self.dlg.batch_state.setCurrentIndex(0)
+            self.dlg.batch_zip.setCurrentIndex(0)
+        else:
+            self.dlg.batch_city.setEnabled(True)
+            self.dlg.batch_state.setEnabled(True)
+            self.dlg.batch_zip.setEnabled(True)
+            self.dlg.city_label_batch.setEnabled(True)
+            self.dlg.state_label_batch.setEnabled(True)
+            self.dlg.zip_label_batch.setEnabled(True)
+
+            # Set address components to what they were before
+            self.dlg.batch_city.setCurrentIndex(self.previous_batch_city_index)
+            self.dlg.batch_state.setCurrentIndex(self.previous_batch_state_index)
+            self.dlg.batch_zip.setCurrentIndex(self.previous_batch_zip_index)
 
     def reset_csv(self):
         # Reset all aspects of the dialogue associated with adding/setting the input csv file
         self.dlg.csv_file.setFilePath(' ')
         self.dlg.csv_file_output.setFilePath(' ')
-
+        self.dlg.single_line_box.setChecked(False)
         self.dlg.primary_key_checkbox.setChecked(False)
         self.dlg.batch_id.clear()
         self.dlg.batch_address.clear()
@@ -912,6 +969,10 @@ class Smarty:
         self.dlg.batch_state.clear()
         self.dlg.batch_zip.clear()
         self.dlg.batch_point_label.clear()
+
+        self.previous_batch_city_index = 0
+        self.previous_batch_state_index = 0
+        self.previous_batch_zip_index = 0
 
         self.dlg.display_output_box.setChecked(True)
 
@@ -1042,7 +1103,8 @@ class Smarty:
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
             self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
             self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
-            self.dlg.primary_key_checkbox.stateChanged.connect(self.enable_id_box)
+            self.dlg.primary_key_checkbox.stateChanged.connect(self.set_primary_key_checkbox)
+            self.dlg.single_line_box.stateChanged.connect(self.set_single_line_checkbox)
             self.dlg.use_autocomplete.stateChanged.connect(self.autocomplete_state)
 
             # Set colors
