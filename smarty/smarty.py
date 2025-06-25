@@ -279,7 +279,7 @@ class Smarty:
         try:
             client.send_lookup(lookup)
         except exceptions.SmartyException as err:
-            self.iface.messageBar().pushMessage("FAIL ", str(exceptions.SmartyException), level=Qgis.Critical, duration=6)
+            self.iface.messageBar().pushMessage("Error sending lookup. ", str(err), level=Qgis.Critical, duration=6)
             return
 
         result = lookup.result
