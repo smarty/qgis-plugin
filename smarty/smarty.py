@@ -732,7 +732,7 @@ class Smarty:
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
 
-        if current_selected_layer_index < len(layers_list):
+        if current_selected_layer_index < len(layers_list) and current_selected_layer_index != -1:
             self.dlg.layer_box.setCurrentIndex(current_selected_layer_index)
 
         return layers_list
