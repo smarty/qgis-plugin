@@ -687,6 +687,8 @@ class Smarty:
             self.dlg.meta_data_results.setVisible(False)
 
     def refresh_layers(self):
+        current_selected_layer_index = self.dlg.layer_box.currentIndex()
+
         layers = QgsProject.instance().layerTreeRoot().children()
         layers_list = []
         layers = QgsProject.instance().mapLayers().values()
@@ -729,6 +731,9 @@ class Smarty:
 
         self.dlg.layer_box.clear()
         self.dlg.layer_box.addItems([layer.name() for layer in layers_list])
+
+        if current_selected_layer_index < len(layers_list):
+            self.dlg.layer_box.setCurrentIndex(current_selected_layer_index)
 
         return layers_list
 
