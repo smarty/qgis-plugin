@@ -104,6 +104,9 @@ class Smarty:
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
 
+        # Listen for deleted layers and update the layers shown in the UI accordingly.
+        QgsProject.instance().layerRemoved.connect(self.refresh_layers)
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -223,10 +226,8 @@ class Smarty:
         if self.dlg.new_layer_radio.isChecked() == False and self.dlg.existing_layer_radio.isChecked() == False:
             self.iface.messageBar().pushMessage("ERROR ", "Please choose an existing layer or create a new one." , level=Qgis.Critical, duration=6)
             return
-
         # Check to make sure user adds an ID to layer if the existing layer has an ID associated with the addresses
         if self.dlg.existing_layer_radio.isChecked() and self.dlg.single_address_id.text() == '' and self.dlg.single_frame_id.isEnabled():
-
             self.iface.messageBar().pushMessage("ERROR ", "You must add an ID for this address if you want to add it to the current existing layer." , level=Qgis.Critical, duration=6)
             return
 
@@ -257,7 +258,7 @@ class Smarty:
             i_city = ''
             i_state = ''
             i_zip = ''
-            lookup.street = i_address
+            lookup.street = self.dlg.single_address_lookup.text()
         else:
             # Make sure user has inputted information before moving on
             if not len(self.dlg.street.text()) > 0:
@@ -282,47 +283,14 @@ class Smarty:
             return
 
         result = lookup.result
-        # Handle the success of the API call
-        success = Utils.handle_success(result)
-        if success == "No Match. The address is invalid.":
-            self.dlg.resize(586, 532)
-            self.dlg.results.setVisible(True)
-            self.dlg.summary_result.setText(success)
-            self.iface.messageBar().pushMessage("NO MATCH ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
-            return
 
+        # Empty bracket response
         if len(result) == 0:
             self.iface.messageBar().pushMessage("No match found ", "try entering the address in the 'Address Components'", level=Qgis.Critical, duration=6)
             return
+
+        # Receive all the API information
         candidate = result[0]
-
-        project = QgsProject.instance()
-
-        # Create a new layer or use an existing layer chosen by the user
-        if self.dlg.new_layer_radio.isChecked():
-            layer_name = self.dlg.layer_name_single.text()
-
-            if layer_name == "":
-                layer_name = "Smarty"
-
-            if self.dlg.id_check_box.isChecked():
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
-                                           layer_name,
-                                           "memory")
-            else:
-                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
-                                           layer_name,
-                                           "memory")
-
-        elif self.dlg.existing_layer_radio.isChecked():
-            index = self.dlg.layer_box.currentIndex()
-            layers = self.refresh_layers()
-            if len(layers) == 0:
-                self.iface.messageBar().pushMessage("No matching layer ", "Please choose a valid layer", level=Qgis.Critical, duration=6)
-                return
-            layer_out = layers[index]
-
-            # Receive all the API information
         address = self.set_address(candidate)
         longitude = candidate.metadata.longitude
         latitude = candidate.metadata.latitude
@@ -357,11 +325,45 @@ class Smarty:
         self.dlg.congressional_district_result.setText(cong_dist)
         self.dlg.time_zone_result.setText(time_zone)
         self.dlg.dst_result.setText(str(dst))
+
+        # Check if the candidate returned is good to plot.
+        success = Utils.handle_success(result)
+        if success == "No Match - The address is invalid.":
+            self.dlg.resize(586, 532)
+            self.dlg.results.setVisible(True)
+            self.dlg.summary_result.setText(success)
+            self.iface.messageBar().pushMessage("NO MATCH ", "See Summary section of results for more information.", level=Qgis.Critical, duration=6)
+            return
+
         self.dlg.summary_result.setText(success)
 
+        # Create a new layer or use an existing layer chosen by the user
+        if self.dlg.new_layer_radio.isChecked():
+            layer_name = self.dlg.layer_name_single.text()
+
+            if layer_name == "":
+                layer_name = "Smarty"
+
+            if self.dlg.id_check_box.isChecked():
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
+                                           layer_name,
+                                           "memory")
+            else:
+                layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
+                                           layer_name,
+                                           "memory")
+
+        elif self.dlg.existing_layer_radio.isChecked():
+            index = self.dlg.layer_box.currentIndex()
+            layers = self.refresh_layers()
+            if len(layers) == 0:
+                self.iface.messageBar().pushMessage("No matching layer ", "Please choose a valid layer", level=Qgis.Critical, duration=6)
+                return
+            layer_out = layers[index]
+
         # Create Lat/Long point to output
-        point_out = QgsPointXY(longitude, latitude)
         feature = QgsFeature()
+        point_out = QgsPointXY(longitude, latitude)
         feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
         # Set point label
@@ -370,7 +372,7 @@ class Smarty:
         else:
             label = self.dlg.point_label.text()
 
-            # Create attributes associated with created layer
+        # Create attributes associated with created layer
         id = self.dlg.single_address_id.text()
         if self.dlg.new_layer_radio.isChecked() and self.dlg.id_check_box.isChecked():
             feature.setAttributes([id, address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
@@ -382,7 +384,7 @@ class Smarty:
             feature.setAttributes([address, longitude, latitude, city, state, zip_code, zip_4, precision, county,
                                    county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
 
-            # Set symbol
+        # Set symbol
         symbol = self.set_symbol(self.dlg.symbol_color_single.color(), self.dlg.symbol_drop_down_single.currentText(), self.dlg.symbol_size_single.value())
 
         layer_out.dataProvider().addFeature(feature)
@@ -394,6 +396,7 @@ class Smarty:
         layer_out.updateExtents()
 
         # Add created layer to the current project
+        project = QgsProject.instance()
         project.addMapLayer(layer_out)
 
         # Zoom in on the bounding box of the lat/long point
@@ -768,7 +771,7 @@ class Smarty:
         text_format.setBackground(background_color )
         text_format.setSize(15)
         label_settings.setFormat(text_format)
-        label_settings.LinePlacementFlags(1)
+        # label_settings.LinePlacementFlags(1)
         # label_settings.quadOffset(7)
         # label_settings.xOffset = 3
         # label_settings.yOffset = 7
@@ -1077,7 +1080,8 @@ class Smarty:
             self.dlg.meta_data.clicked.connect(self.meta_resize)
             self.dlg.new_layer_radio.clicked.connect(self.show_new_layer)
             self.dlg.existing_layer_radio.clicked.connect(self.show_existing_layer)
-            self.dlg.existing_layer_radio.clicked.connect(self.enable_single_id_box)
+            self.dlg.existing_layer_radio.clicked.connect(self.refresh_layers)
+            # self.dlg.existing_layer_radio.clicked.connect(self.enable_single_id_box)
             self.dlg.reset_csv.clicked.connect(self.reset_csv)
             self.dlg.add_csv.clicked.connect(self.add_csv)
             self.dlg.add_tokens.clicked.connect(self.add_tokens)
@@ -1102,7 +1106,7 @@ class Smarty:
 
             # State changed
             self.dlg.single_address_lookup.textChanged.connect(self.autocomplete)
-            self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
+            # self.dlg.layer_box.currentIndexChanged.connect(self.enable_single_id_box)
             self.dlg.id_check_box.stateChanged.connect(self.enable_single_id)
             self.dlg.primary_key_checkbox.stateChanged.connect(self.set_primary_key_checkbox)
             self.dlg.single_line_box.stateChanged.connect(self.set_single_line_checkbox)
