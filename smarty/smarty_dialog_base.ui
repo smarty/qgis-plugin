@@ -163,7 +163,7 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_36">
            <item>
-            <widget class="QTabWidget" name="tabWidget_2">
+            <widget class="QTabWidget" name="single_lookup_subtab">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1338,7 +1338,7 @@
                     <cursorShape>PointingHandCursor</cursorShape>
                    </property>
                    <property name="text">
-                    <string>Add CSV</string>
+                    <string>Enter CSV</string>
                    </property>
                   </widget>
                  </item>
@@ -1412,7 +1412,7 @@
                     </font>
                    </property>
                    <property name="text">
-                    <string>Save Output:</string>
+                    <string>Output CSV Path:</string>
                    </property>
                   </widget>
                  </item>
@@ -1566,7 +1566,7 @@
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QCheckBox" name="id_box">
+                  <widget class="QCheckBox" name="primary_key_checkbox">
                    <property name="layoutDirection">
                     <enum>Qt::RightToLeft</enum>
                    </property>
