@@ -1419,7 +1419,7 @@
                 </layout>
                </widget>
               </item>
-              <item row="2" column="0">Add commentMore actions
+              <item row="2" column="0">
                <widget class="QCheckBox" name="single_line_box">
                 <property name="layoutDirection">
                  <enum>Qt::RightToLeft</enum>
