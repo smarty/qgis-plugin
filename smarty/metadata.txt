@@ -6,7 +6,7 @@
 name=Smarty
 qgisMinimumVersion=3.0
 description=Smarty Geocoding QGIS Plugin
-version=1.0.10
+version=1.0.12
 author=Smarty
 email=osgeo-it@smarty.com
 
@@ -21,7 +21,7 @@ repository=https://github.com/smartystreets/qgis-plugin
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=Added an option to disable autocomplete when performing a single address lookup.
+changelog=Fixed output paths ending with ".csv" not saving the file for Batch Lookups. Fixed deleting layers causing unexpected errors. Fixed adding a label for Single Lookups not working. Add street suffix to returned addresses. Fix error messages for invalid lookups not showing up in some cases.
 
 # Tags are comma separated with spaces allowed
 tags=python, geocode, geocoder, geocoding, rooftop, address, address validation, address parsing, address verification, address matching, address standardization, address correction, time zone, Daylight Savings, county FIPS Codes, residential or commercial, RDI, congressional district
