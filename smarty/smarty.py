@@ -243,7 +243,8 @@ class Smarty:
         credentials = SharedCredentials(key, hostname)
         request = Request()
         credentials.sign(request)
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geo"]).build_us_street_api_client()
+        # 20250829 - change license from us-rooftop-geo to a license supported by the demo plan
+        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-cloud"]).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.match = "enhanced"
 
