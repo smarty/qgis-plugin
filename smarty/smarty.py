@@ -49,9 +49,29 @@ from .utils import Utils
 import os.path
 import sys
 import os
-import pandas as pd
 import webbrowser
 import csv
+# --- CSV helpers (avoid pandas dependency) ---
+def _read_csv_headers(csv_path):
+    # Returns list of column names from the first row
+    with open(csv_path, newline='', encoding='utf-8-sig', errors='replace') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            # skip empty rows
+            if row and any(cell.strip() for cell in row):
+                return [c.strip() for c in row]
+    return []
+
+def _read_csv_rows(csv_path):
+    # Returns list[dict] where keys are headers
+    with open(csv_path, newline='', encoding='utf-8-sig', errors='replace') as f:
+        reader = csv.DictReader(f)
+        rows = []
+        for r in reader:
+            # Normalize None -> ''
+            rows.append({k: (v if v is not None else '') for k, v in r.items()})
+        return rows
+
 
 class Smarty:
     """QGIS Plugin Implementation."""
@@ -434,19 +454,16 @@ class Smarty:
             self.iface.messageBar().pushMessage("Error: ", "Please select a CSV file to process", level=Qgis.Critical, duration=6)
             return
 
-        # Read the csv into a pandas dataframe
-        df = pd.read_csv(self.dlg.csv_file.filePath())
+        # Read the CSV (avoid pandas)
+        rows = _read_csv_rows(self.dlg.csv_file.filePath())
 
         # Check is user wants to use their own Address ID
         if self.dlg.primary_key_checkbox.isChecked():
             id_column_name = self.dlg.batch_id.currentText()
         else:
             id_column_name = 'smarty-id'
-            df.insert(0,id_column_name,range(0,0 + len(df)))
 
-        df.insert(0, '----', '')
-
-        self.number_of_lookups_in_batch = df.shape[0]
+        self.number_of_lookups_in_batch = len(rows)
 
         # Process the csv and pandas dataframe
         address = self.dlg.batch_address.currentText()
@@ -475,8 +492,9 @@ class Smarty:
         self.id_counter = 0
 
         process_batch_error = False
-        # Iterate over every row of the pandas dataframe to set up the batch lookup
-        for _, row in df.iterrows():
+        # Iterate over every row to set up the batch lookup
+        batch_meta = []
+        for row in rows:
             batch.add(StreetLookup())
             batch[counter].street = row[address]
             batch[counter].city = row[city]
@@ -484,10 +502,24 @@ class Smarty:
             batch[counter].zipcode = str(row[zip])
             batch[counter].match = 'enhanced'
 
+            # Track original inputs for this lookup (so we can attribute results without pandas/indexing)
+            def _col(name):
+                if name == '----':
+                    return ''
+                return row.get(name, '')
+            batch_meta.append({
+                'i_address': str(_col(address)),
+                'i_city': str(_col(city)),
+                'i_state': str(_col(state)),
+                'i_zip': str(_col(zip)),
+                'label': '' if self.dlg.batch_point_label.currentText() == 'None' else str(_col(self.dlg.batch_point_label.currentText())),
+                'row_id': row.get(id_column_name, ''),
+            })
+
             counter += 1
             # Once the batch is full we will send our API call in another function
             if batch.is_full():
-                lookup_error, self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
+                lookup_error, self.id_counter = self.process_batch(batch_meta, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
                 if lookup_error:
                     process_batch_error = True
                 batch.clear()
@@ -495,7 +527,7 @@ class Smarty:
 
         # if the batch is not full but still has addresses on it we still want to process those addresses
         if len(batch) != 0:
-            lookup_error, self.id_counter = self.process_batch(df, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
+            lookup_error, self.id_counter = self.process_batch(batch_meta, id_column_name, address, city, state, zip, layer_out, client, batch, self.id_counter)
             if lookup_error:
                 process_batch_error = True
 
@@ -525,7 +557,7 @@ class Smarty:
         self.lookup_progress = 0
         self.layers = self.refresh_layers()
 
-    def process_batch(self, df, id_column_name, address, city, state, zip, layer_out, client, batch, id_counter):
+    def process_batch(self, batch_meta, id_column_name, address, city, state, zip, layer_out, client, batch, id_counter):
         invalid_lookup_occured = False
 
         # Send the batch API call
@@ -539,24 +571,23 @@ class Smarty:
         for i, lookup in enumerate(batch):
             self.update_progress_bar()
 
-            i_address = str(df.at[i,address])
-            i_city = str(df.at[i,city])
-            i_state = str(df.at[i,state])
-            i_zip = str(df.at[i,zip])
+            meta = batch_meta[i]
+            i_address = meta['i_address']
+            i_city = meta['i_city']
+            i_state = meta['i_state']
+            i_zip = meta['i_zip']
 
             # Set the primary key for this lookup
             if self.dlg.batch_id.currentIndex() == 0: # Default primary key
                 id_counter += 1
                 lookup_id = id_counter
             else:
-                lookup_id = str(df.at[i, id_column_name])
+                lookup_id = str(meta.get('row_id', ''))
 
 
             # Set address/point label
-            if self.dlg.batch_point_label.currentText() == 'None':
-                label = ''
-            else:
-                label = str(df.at[i,self.dlg.batch_point_label.currentText()])
+            label = meta.get('label', '')
+            if label != '':
                 layer_out = self.set_label_batch(layer_out)
 
             candidates = lookup.result
@@ -565,7 +596,7 @@ class Smarty:
 
             # If there are no result from the API on this particular address we will output the address the API received.
             if len(candidates) == 0:
-                self.iface.messageBar().pushMessage('No Match for given address: ' + str(df.at[i,address]) + ' ' + str(df.at[i,city]) + ' ' + str(df.at[i,state]), duration=6, level=Qgis.Critical)
+                self.iface.messageBar().pushMessage('No Match for given address: ' + str(meta.get(address, '')) + ' ' + str(meta.get(city, '')) + ' ' + str(meta.get(state, '')), duration=6, level=Qgis.Critical)
                 feature.setAttributes([lookup_id, i_address, '', '', i_city, i_state, i_zip, '', '', '',
                                        '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
                 invalid_lookup_occured = True
@@ -888,10 +919,8 @@ class Smarty:
             return
         if len(self.dlg.batch_address.currentText()) > 0:
             self.reset_csv
-        # Create pandas dataframe from the given csv
-        df = pd.read_csv(self.dlg.csv_file.filePath())
-        # Create and populate downs with the column names
-        csvColumns = df.columns.values.tolist()
+        # Read CSV headers (avoid pandas)
+        csvColumns = _read_csv_headers(self.dlg.csv_file.filePath())
 
         csvColumns.insert(0,'----')
         self.dlg.batch_address.addItems(csvColumns)
