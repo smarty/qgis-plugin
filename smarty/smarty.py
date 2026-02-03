@@ -920,7 +920,7 @@ class Smarty:
             self.iface.messageBar().pushMessage("Error: ", "Please select a file path", level=Qgis.Critical, duration=6)
             return
         if len(self.dlg.batch_address.currentText()) > 0:
-            self.reset_csv
+            self.reset_csv()
         # Read CSV headers (avoid pandas)
         csvColumns = _read_csv_headers(self.dlg.csv_file.filePath())
 
