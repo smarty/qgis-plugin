@@ -597,7 +597,7 @@ class Smarty:
 
             # If there are no result from the API on this particular address we will output the address the API received.
             if len(candidates) == 0:
-                self.iface.messageBar().pushMessage('No Match for given address: ' + str(meta.get(address, '')) + ' ' + str(meta.get(city, '')) + ' ' + str(meta.get(state, '')), duration=6, level=Qgis.Critical)
+                self.iface.messageBar().pushMessage('No Match for given address: ' + i_address + ' ' + i_city + ' ' + i_state, duration=6, level=Qgis.Critical)
                 feature.setAttributes([lookup_id, i_address, '', '', i_city, i_state, i_zip, '', '', '',
                                        '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
                 invalid_lookup_occured = True
