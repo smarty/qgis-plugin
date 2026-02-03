@@ -72,6 +72,11 @@ def _read_csv_rows(csv_path):
             rows.append({k: (v if v is not None else '') for k, v in r.items()})
         return rows
 
+def _col(row, name):
+    if name == '----':
+        return ''
+    return row.get(name, '')
+
 
 class Smarty:
     """QGIS Plugin Implementation."""
@@ -503,16 +508,12 @@ class Smarty:
             batch[counter].match = 'enhanced'
 
             # Track original inputs for this lookup (so we can attribute results without pandas/indexing)
-            def _col(name):
-                if name == '----':
-                    return ''
-                return row.get(name, '')
             batch_meta.append({
-                'i_address': str(_col(address)),
-                'i_city': str(_col(city)),
-                'i_state': str(_col(state)),
-                'i_zip': str(_col(zip)),
-                'label': '' if self.dlg.batch_point_label.currentText() == 'None' else str(_col(self.dlg.batch_point_label.currentText())),
+                'i_address': str(_col(row, address)),
+                'i_city': str(_col(row, city)),
+                'i_state': str(_col(row, state)),
+                'i_zip': str(_col(row, zip)),
+                'label': '' if self.dlg.batch_point_label.currentText() == 'None' else str(_col(row, self.dlg.batch_point_label.currentText())),
                 'row_id': row.get(id_column_name, ''),
             })
 
