@@ -523,6 +523,7 @@ class Smarty:
                 if lookup_error:
                     process_batch_error = True
                 batch.clear()
+                batch_meta = []
                 counter = 0
 
         # if the batch is not full but still has addresses on it we still want to process those addresses
