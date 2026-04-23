@@ -1,4 +1,4 @@
-# from . import City, ZipCode
+from smartystreets_python_sdk.us_zipcode import City, ZipCode
 
 
 class Result:

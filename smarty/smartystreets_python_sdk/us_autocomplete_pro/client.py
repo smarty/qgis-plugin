@@ -1,6 +1,6 @@
-from .. import Request
-from ..exceptions import SmartyException
-from . import Suggestion, geolocation_type
+from smartystreets_python_sdk import Request
+from smartystreets_python_sdk.exceptions import SmartyException
+from smartystreets_python_sdk.us_autocomplete_pro import Suggestion, geolocation_type
 
 
 class Client:
@@ -47,6 +47,9 @@ class Client:
         self.add_parameter(request, 'prefer_geolocation', lookup.prefer_geo)
         self.add_parameter(request, 'selected', lookup.selected)
         self.add_parameter(request, 'source', lookup.source)
+
+        for parameter in lookup.custom_parameter_array:
+            self.add_parameter(request, parameter, lookup.custom_parameter_array[parameter])
 
         return request
 

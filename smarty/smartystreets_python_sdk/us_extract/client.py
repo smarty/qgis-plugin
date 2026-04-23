@@ -1,6 +1,8 @@
-# from smartystreets_python_sdk import Request
-from ..exceptions import SmartyException
-# from . import Result
+from smartystreets_python_sdk import Request
+from smartystreets_python_sdk.exceptions import SmartyException
+from smartystreets_python_sdk.us_extract import Result
+from smartystreets_python_sdk.us_street.match_type import MatchType
+
 
 class Client:
     def __init__(self, sender, serializer):
@@ -39,6 +41,13 @@ class Client:
         Client.add_parameter(request, 'aggressive', str(lookup.aggressive).lower())
         Client.add_parameter(request, 'addr_line_breaks', str(lookup.addresses_have_line_breaks).lower())
         Client.add_parameter(request, 'addr_per_line', lookup.addresses_per_line)
+        if isinstance(lookup.match, MatchType):
+            Client.add_parameter(request, 'match', lookup.match.value)
+        else:
+            Client.add_parameter(request, 'match', lookup.match)
+
+        for parameter in lookup.custom_parameter_array:
+            Client.add_parameter(request, parameter, lookup.custom_parameter_array[parameter])
 
         return request
 

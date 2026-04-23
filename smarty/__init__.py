@@ -25,6 +25,10 @@
 import subprocess
 import platform
 import os
+import sys
+
+# Allow the vendored SDK to use absolute imports (e.g. import smartystreets_python_sdk)
+sys.path.insert(0, os.path.dirname(__file__))
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
