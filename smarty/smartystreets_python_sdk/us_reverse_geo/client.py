@@ -1,5 +1,5 @@
-# from smartystreets_python_sdk import Request
-# from . import Response
+from smartystreets_python_sdk import Request
+from smartystreets_python_sdk.us_reverse_geo import Response
 
 
 class Client:
@@ -31,6 +31,10 @@ class Client:
 
         self.add_parameter(request, 'latitude', lookup.latitude)
         self.add_parameter(request, 'longitude', lookup.longitude)
+        self.add_parameter(request, 'source', lookup.source)
+
+        for parameter in lookup.custom_parameter_array:
+            self.add_parameter(request, parameter, lookup.custom_parameter_array[parameter])
 
         return request
 

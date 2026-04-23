@@ -1,4 +1,4 @@
-from ..exceptions import UnprocessableEntityError
+from smartystreets_python_sdk.exceptions import UnprocessableEntityError
 
 
 class Lookup:
@@ -19,6 +19,7 @@ class Lookup:
         """
         self.result = []
 
+        self.custom_parameter_array = {}
         self.input_id = None
         self.country = country
         self.geocode = None
@@ -32,6 +33,7 @@ class Lookup:
         self.locality = None
         self.administrative_area = None
         self.postal_code = None
+        self.features = None
 
     @property
     def missing_country(self):
@@ -61,17 +63,11 @@ class Lookup:
         return not self.field_is_missing(field)
 
     def ensure_enough_info(self):
-        if self.missing_country:
+        if self.field_is_missing(self.country):
             raise UnprocessableEntityError('Country field is required.')
 
-        if self.has_freeform:
-            return True
-
-        if self.missing_address1:
+        if self.field_is_missing(self.freeform) and self.field_is_missing(self.address1):
             raise UnprocessableEntityError('Either freeform or address1 is required.')
-
-        if self.has_postal_code:
-            return True
-
-        if self.missing_locality_or_administrative_area:
-            raise UnprocessableEntityError('Insufficient information: One or more required fields were not set on the lookup.')
+        
+    def add_custom_parameter(self, parameter, value):
+        self.custom_parameter_array[parameter] = value

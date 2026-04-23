@@ -1,4 +1,4 @@
-# from . import Changes
+from .changes import Changes
 
 class Analysis:
     def __init__(self, obj):

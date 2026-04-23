@@ -1,4 +1,4 @@
-from ..us_street.candidate import Candidate
+from smartystreets_python_sdk.us_street.candidate import Candidate
 
 
 class Address:
