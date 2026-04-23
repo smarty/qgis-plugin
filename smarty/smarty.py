@@ -35,10 +35,9 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
 
 #########
 import pip
-# import smartystreets_python_sdk
-from .smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, StaticCredentials, Batch, Request
-from .smartystreets_python_sdk.us_street import Lookup as StreetLookup
-from .smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup, geolocation_type
+from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, Batch, Request
+from smartystreets_python_sdk.us_street import Lookup as StreetLookup
+from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup
 #########
 
 # Initialize Qt resources from file resources.py
@@ -269,7 +268,7 @@ class Smarty:
         request = Request()
         credentials.sign(request)
         # 20250829 - change license from us-rooftop-geo to a license supported by the demo plan
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-cloud"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.match = "enhanced"
 
@@ -490,7 +489,7 @@ class Smarty:
         auth_id = self.dlg.auth_id.text()
         auth_token = self.dlg.auth_token.text()
         credentials = StaticCredentials(auth_id, auth_token)
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).build_us_street_api_client()
         batch = Batch()
 
         counter = 0
@@ -694,7 +693,7 @@ class Smarty:
             return
         # Set up credentials for an initial lookup
         credentials = StaticCredentials(self.dlg.auth_id.text() , self.dlg.auth_token.text())
-        client = ClientBuilder(credentials).with_licenses(["us-rooftop-geocoding-custom-enterprise-cloud,us-rooftop-geocoding-cloud,us-rooftop-geocoding-enterprise-cloud"]).build_us_street_api_client()
+        client = ClientBuilder(credentials).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.street = "484 W Bulldog Blvd, Provo, UT 84604"
         # Send one lookup to make sure they are authorized to use send batches to Smarty API
@@ -852,7 +851,7 @@ class Smarty:
         hostname = 'qgis_smarty' # secret key token --> secret_key_token
 
         credentials = SharedCredentials(key, hostname)
-        client = ClientBuilder(credentials).with_licenses(["us-autocomplete-pro-cloud"]).build_us_autocomplete_pro_api_client()
+        client = ClientBuilder(credentials).build_us_autocomplete_pro_api_client()
         text = self.dlg.single_address_lookup.text()
 
         # Send an API autocomplete call if user adds text
