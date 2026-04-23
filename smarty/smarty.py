@@ -267,8 +267,7 @@ class Smarty:
         credentials = SharedCredentials(key, hostname)
         request = Request()
         credentials.sign(request)
-        # 20250829 - change license from us-rooftop-geo to a license supported by the demo plan
-        client = ClientBuilder(credentials).build_us_street_api_client()
+        client = ClientBuilder(credentials).with_custom_header({'User-Agent': 'qgis-demo'}).build_us_street_api_client()
         lookup = StreetLookup()
         lookup.match = "enhanced"
 
@@ -478,18 +477,18 @@ class Smarty:
         project = QgsProject.instance()
         # Create new VectorLayer to output results on
         if self.dlg.layer_name_batch.text() == '':
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string&field=smarty_key:string&field=smarty_key_ext:string",
                                        'Smarty',
                                        "memory")
         else:
-            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string",
+            layer_out = QgsVectorLayer("Point?crs=EPSG:4326&field=id:string&field=address:string&field=longitude:string&field=latitude:string&field=city:string&field=state:string&field=zip_code:string&field=zip_4:string&field=precision:string&field=county:string&field=county_fips:string&field=rdi:string&field=cong_dist:string&field=time_zone:string&field=dst:string&field=label:string&field=summary:string&field=i_address:string&field=i_city:string&field=i_state:string&field=i_zip:string&field=smarty_key:string&field=smarty_key_ext:string",
                                        self.dlg.layer_name_batch.text(),
                                        "memory")
         # Set up credentials and Batch
         auth_id = self.dlg.auth_id.text()
         auth_token = self.dlg.auth_token.text()
         credentials = StaticCredentials(auth_id, auth_token)
-        client = ClientBuilder(credentials).build_us_street_api_client()
+        client = ClientBuilder(credentials).with_custom_header({'User-Agent': 'qgis'}).build_us_street_api_client()
         batch = Batch()
 
         counter = 0
@@ -599,7 +598,7 @@ class Smarty:
             if len(candidates) == 0:
                 self.iface.messageBar().pushMessage('No Match for given address: ' + i_address + ' ' + i_city + ' ' + i_state, duration=6, level=Qgis.Critical)
                 feature.setAttributes([lookup_id, i_address, '', '', i_city, i_state, i_zip, '', '', '',
-                                       '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip])
+                                       '', '', '', '', '', label, 'No Match', i_address, i_city, i_state, i_zip, '', ''])
                 invalid_lookup_occured = True
             else:
                 # Get all the information from this lookup's top candidate
@@ -618,6 +617,8 @@ class Smarty:
                 cong_dist = candidate.metadata.congressional_district
                 time_zone = candidate.metadata.time_zone
                 dst = candidate.metadata.obeys_dst
+                smarty_key = candidate.smarty_key
+                smarty_key_ext = candidate.smarty_key_ext
 
                 if longitude is None or latitude is None:
                     longitude = 0
@@ -632,7 +633,7 @@ class Smarty:
 
                 # Set attributes for associated layer
                 feature.setAttributes([lookup_id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
-                                       county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip])
+                                       county_fips, rdi, cong_dist, time_zone, dst, label, success, i_address, i_city, i_state, i_zip, smarty_key, smarty_key_ext])
 
             # Set symbol features
             symbol = self.set_symbol(self.dlg.symbol_color.color(), self.dlg.symbol_drop_down.currentText(), self.dlg.symbol_size_batch.value())
