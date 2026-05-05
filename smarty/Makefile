@@ -77,6 +77,9 @@ PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
 RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
+PLUGIN_DIR = $(HOME)/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/$(notdir $(CURDIR))
+
+
 .PHONY: default vendor check
 default:
 	@echo While you can use make to build and deploy your plugin, pb_tool
@@ -86,12 +89,17 @@ default:
 	@echo You can install pb_tool using: pip install pb_tool
 	@echo See https://g-sherman.github.io/plugin_build_tool/ for info. 
 
+install:
+	mkdir -p "$(PLUGIN_DIR)"
+	cp -r . "$(PLUGIN_DIR)"
+
 vendor:
 	cd .. && ./vendor.sh
 
 check:
 	python3 -m py_compile __init__.py smarty.py smarty_dialog.py utils.py
 	python3 -c "import sys; sys.path.insert(0, '.'); import smartystreets_python_sdk; from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, Batch, Request; from smartystreets_python_sdk.us_street import Lookup; from smartystreets_python_sdk.us_autocomplete_pro import Lookup; print('OK')"
+	python3 -c "import sys; sys.path.insert(0, '.'); import summary; print('OK')"
 
 compile: $(COMPILED_RESOURCE_FILES)
 
