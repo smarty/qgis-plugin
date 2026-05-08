@@ -1,5 +1,5 @@
-# from . import Coordinate
-# from . import Address
+from .coordinate import Coordinate
+from .address import Address
 
 
 class Result:

@@ -1,5 +1,8 @@
-from .candidate import Candidate
-from .. import Request, Batch
+from smartystreets_python_sdk.us_street.match_type import MatchType
+from smartystreets_python_sdk.us_street.output_format import OutputFormat
+
+from smartystreets_python_sdk.us_street import Candidate
+from smartystreets_python_sdk import Request, Batch
 
 
 class Client:
@@ -55,10 +58,16 @@ def remap_keys(obj):
     for lookup in obj:
         converted_lookup = {}
 
-        if lookup.match == 'enhanced' and lookup.candidates == 1:
-            add_field(converted_lookup, 'candidates', 5)
-        else:
+        # Determine effective match strategy (default to ENHANCED if not specified)
+        match_strategy = lookup.match
+        if match_strategy is None:
+            match_strategy = MatchType.ENHANCED
+
+        # Handle candidates
+        if lookup.candidates > 0:
             add_field(converted_lookup, 'candidates', lookup.candidates)
+        elif match_strategy == MatchType.ENHANCED or match_strategy == "enhanced":
+            add_field(converted_lookup, 'candidates', 5)
 
         add_field(converted_lookup, 'input_id', lookup.input_id)
         add_field(converted_lookup, 'street', lookup.street)
@@ -70,7 +79,20 @@ def remap_keys(obj):
         add_field(converted_lookup, 'lastline', lookup.lastline)
         add_field(converted_lookup, 'addressee', lookup.addressee)
         add_field(converted_lookup, 'urbanization', lookup.urbanization)
-        add_field(converted_lookup, 'match', lookup.match)
+        add_field(converted_lookup, 'county_source', lookup.county_source)
+
+        if isinstance(match_strategy, MatchType):
+            add_field(converted_lookup, 'match', match_strategy.value)
+        else:
+            add_field(converted_lookup, 'match', match_strategy)
+
+        if isinstance(lookup.outputformat, OutputFormat):
+            add_field(converted_lookup, 'format', lookup.outputformat.value)
+        else:
+            add_field(converted_lookup, 'format', lookup.outputformat)
+
+        for parameter in lookup.custom_parameter_array:
+            add_field(converted_lookup, parameter, lookup.custom_parameter_array[parameter])
 
         converted_obj.append(converted_lookup)
 

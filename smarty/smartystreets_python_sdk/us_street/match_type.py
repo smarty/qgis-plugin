@@ -1,7 +1,7 @@
-STRICT = 'strict'
+from enum import Enum
 
-RANGE = 'range'  # Deprecated
 
-INVALID = 'invalid'
-
-ENHANCED = 'enhanced'
+class MatchType(str, Enum):
+    STRICT = "strict"
+    INVALID = "invalid"
+    ENHANCED = "enhanced"

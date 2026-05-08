@@ -14,8 +14,7 @@ BAD_REQUEST = "Bad Request (Malformed Payload): A GET request lacked a street fi
 
 UNPROCESSABLE_ENTITY = "GET request lacked required fields."
 
-TOO_MANY_REQUESTS = "When using public \"website key\" authentication, \
-we restrict the number of requests coming from a given source over too short of a time."
+TOO_MANY_REQUESTS = "The rate limit has been exceeded."
 
 INTERNAL_SERVER_ERROR = "Internal Server Error."
 
@@ -23,3 +22,5 @@ SERVICE_UNAVAILABLE = "Service Unavailable. Try again later."
 
 GATEWAY_TIMEOUT = "The upstream data provider did not respond in a timely fashion and the request failed. " \
                   "A serious, yet rare occurrence indeed."
+
+NOT_MODIFIED = "Not Modified: The requested record has not been modified since the previous request with the Etag value."

@@ -1,4 +1,4 @@
-from .exceptions import BatchFullError
+from smartystreets_python_sdk.exceptions import BatchFullError
 
 
 class Batch:

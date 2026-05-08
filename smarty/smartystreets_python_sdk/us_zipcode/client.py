@@ -1,5 +1,5 @@
-# from . import Result
-from .. import Request, Batch
+from smartystreets_python_sdk.us_zipcode import Result
+from smartystreets_python_sdk import Request, Batch
 
 
 class Client:
@@ -60,6 +60,9 @@ def remap_keys(obj):
         add_field(converted_lookup, 'city', lookup.city)
         add_field(converted_lookup, 'state', lookup.state)
         add_field(converted_lookup, 'zipcode', lookup.zipcode)
+
+        for parameter in lookup.custom_parameter_array:
+            add_field(converted_lookup, parameter, lookup.custom_parameter_array[parameter])
 
         converted_obj.append(converted_lookup)
 
