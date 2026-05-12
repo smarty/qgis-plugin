@@ -1,7 +1,9 @@
 COMPILED_RESOURCE_FILES = smarty/resources.py
 RESOURCE_SRC=$(shell grep '^ *<file' smarty/resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
-.PHONY: vendor check compile install lint
+QGIS_PLUGINS_DIR = $(HOME)/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins
+
+.PHONY: vendor check compile install lint deploy redeploy
 
 install:
 	pip install bandit detect-secrets flake8
@@ -13,6 +15,14 @@ lint:
 	@detect-secrets scan --all-files || true
 	@echo "--- Bandit ---"
 	bandit -r smarty/ -x ./.git
+
+deploy:
+	rm -rf "$(QGIS_PLUGINS_DIR)/smarty"
+	cp -rf smarty "$(QGIS_PLUGINS_DIR)/smarty"
+
+redeploy: deploy
+	osascript -e 'quit app "QGIS"'
+	open -a QGIS
 
 vendor:
 	./vendor.sh
