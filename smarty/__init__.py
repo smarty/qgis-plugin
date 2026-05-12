@@ -22,8 +22,6 @@
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS.
 """
-import subprocess
-import platform
 import os
 import sys
 
