@@ -21,9 +21,6 @@
  *                                                                         *
  ***************************************************************************/
 """
-from calendar import c # FIXME: I don't think we are using these?
-from itertools import count
-from operator import add, truediv
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon, QColor, QStandardItemModel, QStandardItem
 # from qgis.PyQt.QtNetwork import QtNetworkRequest
@@ -34,7 +31,6 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
                        QgsPalLayerSettings, QgsTextFormat, QgsTextBackgroundSettings, QgsVectorLayerSimpleLabeling)
 
 #########
-import pip
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, Batch, Request
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup
@@ -45,8 +41,6 @@ from .resources import *
 # Import the code for the dialog
 from .smarty_dialog import SmartyDialog
 from .utils import Utils
-import os.path
-import sys
 import os
 import webbrowser
 import csv
