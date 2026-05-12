@@ -18,15 +18,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install check tools
-        run: pip install bandit detect-secrets flake8
+        run: make install
 
-      - name: Flake8 (informational)
-        run: flake8 .
-        continue-on-error: true
-
-      - name: detect-secrets (informational)
-        run: detect-secrets scan --all-files
-        continue-on-error: true
-
-      - name: Bandit (blocking)
-        run: bandit -r . -x ./.git
+      - name: Run lint checks
+        run: make lint

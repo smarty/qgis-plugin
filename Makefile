@@ -10,11 +10,11 @@ install:
 
 lint:
 	@echo "--- Flake8 ---"
-	@flake8 smarty/ || true
+	@flake8 smarty/ --exclude=smarty/smartystreets_python_sdk,smarty/smartystreets_python_sdk-6.1.0.dist-info || true
 	@echo "--- detect-secrets ---"
 	@detect-secrets scan --all-files || true
 	@echo "--- Bandit ---"
-	bandit -r smarty/ -x ./.git
+	bandit -r smarty/ -x smarty/smartystreets_python_sdk,smarty/test,./.git
 
 deploy:
 	rm -rf "$(QGIS_PLUGINS_DIR)/smarty"
