@@ -54,7 +54,7 @@ repository=https://github.com/smartystreets/qgis-plugin
 # End of mandatory metadata
 
 # Recommended items:
-
+changelog=
 hasProcessingProvider=no
 
 # Tags are comma separated with spaces allowed
