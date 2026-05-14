@@ -21,7 +21,7 @@ deploy:
 	cp -rf smarty "$(QGIS_PLUGINS_DIR)/smarty"
 
 redeploy: deploy
-	osascript -e 'quit app "QGIS"'
+	killall QGIS > /dev/null 2>&1 || true
 	open -a QGIS
 
 vendor:

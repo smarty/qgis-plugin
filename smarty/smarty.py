@@ -34,6 +34,7 @@ from qgis.core import (QgsCoordinateReferenceSystem, QgsCoordinateTransform, Qgs
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder, SharedCredentials, Batch, Request
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 from smartystreets_python_sdk.us_autocomplete_pro import Lookup as AutocompleteProLookup
+from summary import summary
 #########
 
 # Initialize Qt resources from file resources.py
@@ -345,8 +346,8 @@ class Smarty:
         self.dlg.dst_result.setText(str(dst))
 
         # Check if the candidate returned is good to plot.
-        success = Utils.handle_success(result)
-        if success == "No Match - The address is invalid.":
+        success = self.handle_success(result)
+        if success == "No Match":
             self.dlg.resize(586, 532)
             self.dlg.results.setVisible(True)
             self.dlg.summary_result.setText(success)
@@ -623,7 +624,7 @@ class Smarty:
                     feature.setGeometry(QgsGeometry.fromPointXY(point_out))
 
                 # Handle success of address lookup
-                success = Utils.handle_success(candidates)
+                success = self.handle_success(candidates)
 
                 # Set attributes for associated layer
                 feature.setAttributes([lookup_id, address_result, longitude, latitude, city_result, state_result, zip_result, zip_4, precision, county,
@@ -1017,15 +1018,15 @@ class Smarty:
             self.dlg.single_address_lookup.setCompleter(None)
 
     def handle_success(self, result): # Handle and determine the success of the API request
-        if Utils.is_valid(result):
-            return "valid_address"
-        if Utils.is_invalid(result):
-            return "invalid_address"
-        if Utils.is_missing_secondary(result):
-            return "missing_secondary"
-        if Utils.is_ambiguous(result):
-            return "ambiguous_address"
-        return "MAJOR ERROR"
+        enhanced_match = ""
+        dpv_match_code = ""
+        dpv_footnotes = ""
+        if len(result) > 0:
+            candidate = result[0]
+            enhanced_match = candidate.analysis.enhanced_match
+            dpv_match_code = candidate.analysis.dpv_match_code
+            dpv_footnotes = candidate.analysis.dpv_footnotes
+        return summary(enhanced_match, dpv_match_code, dpv_footnotes)
 
     def output_csv(self, layer_out):
         # Throw error if the file path has not been chosen
